@@ -30,6 +30,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final List<Map<String, dynamic>> messages = [];
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _messageController = TextEditingController();
+   String originalMessage = ""; 
 
   @override
   Widget build(BuildContext context) {
@@ -249,7 +250,15 @@ class _ChatScreenState extends State<ChatScreen> {
               height: 20,
               width: 20,
             ),
-            onPressed: () {},
+            onPressed: () {
+              if (isUserMessage) {
+                // Edit the user's message
+                setState(() {
+                  originalMessage = message['text'];
+                  _messageController.text = originalMessage;
+                });
+              }
+            },
           ),
         ),
         Container(
@@ -259,10 +268,11 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           decoration: BoxDecoration(
             color: isUserMessage ? Color(0xFF7356E8) : Color(0xFFDFDFF4),
-            borderRadius: BorderRadius.only(
+            borderRadius:  BorderRadius.only(
               topRight: Radius.circular(16),
+              topLeft: isUserMessage ? Radius.circular(16) : Radius.circular(0) ,
               bottomLeft: Radius.circular(16),
-              bottomRight: Radius.circular(16),
+              bottomRight: isUserMessage? Radius.circular(0) : Radius.circular(16) ,
             ),
           ),
           child: Padding(
@@ -280,17 +290,28 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-
-
   void _sendMessage() async {
     String message = _messageController.text.trim();
 
     if (message.isNotEmpty) {
-     
+      if (originalMessage.isNotEmpty) {
+        // Replace the original message with the edited one
+        setState(() {
+          for (var i = 0; i < messages.length; i++) {
+            if (messages[i]['text'] == originalMessage) {
+              messages[i]['text'] = message;
+              originalMessage = ""; // Clear the original message
+              _messageController.clear();
+              break;
+            }
+          }
+        });
+      } else {
       setState(() {
         messages.insert(0, {'text': message, 'sender': 'user'}); 
         _messageController.clear(); 
       });
+    }
       String apiResponse = await fetchResponseFromAPI(message);
       setState(() {
         messages.insert(0, {'text': apiResponse, 'sender': 'server'}); 
@@ -299,6 +320,8 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
 }
+
+
 
 class CustomCupertinoIcons {
   static const IconData paperplane = IconData(0xf733,
@@ -330,3 +353,14 @@ Future<String> fetchResponseFromAPI(String userInput) async {
 }
 
 
+class ChatMessage {
+  final String id; // Unique identifier for each message
+  final String text;
+  final bool isUserMessage;
+
+  ChatMessage({
+    required this.id,
+    required this.text,
+    required this.isUserMessage,
+  });
+}
