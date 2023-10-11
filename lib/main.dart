@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:nvsirai/widgets/circularIconButton.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http; // Import the HTTP package for making API requests
+import 'dart:convert';
 
 void main() {
   runApp(ChatApp());
@@ -25,7 +27,7 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  final List<String> messages = [];
+    final List<Map<String, dynamic>> messages = [];
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _messageController = TextEditingController();
 
@@ -105,6 +107,7 @@ class _ChatScreenState extends State<ChatScreen> {
         decoration: BoxDecoration(
           image: DecorationImage(
             image: AssetImage('assets/images/bg.jpg'),
+            fit: BoxFit.fill,
           ),
         ),
         child: Column(
@@ -129,52 +132,6 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _buildMessageContainer(String message) {
-    double screenWidth = MediaQuery.of(context).size.width;
-    double maxWidth = screenWidth * 0.9;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8.0),
-          child: IconButton(
-            icon: Image.asset(
-              'assets/images/edit.png',
-              height: 20,
-              width: 20,
-            ),
-            onPressed: () {},
-          ),
-        ),
-        Container(
-          margin: EdgeInsets.only(left: 0, bottom: 8),
-          constraints: BoxConstraints(
-            maxWidth: maxWidth,
-          ),
-          decoration: BoxDecoration(
-            color: Color(0xFF7356E8),
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(16),
-              topRight: Radius.circular(16),
-              bottomLeft: Radius.circular(16),
-            ),
-          ),
-          child: Padding(
-            padding:
-                EdgeInsets.fromLTRB(16, 8, 8, 8), // Add padding to the right
-            child: Text(
-              message,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildMessageInput() {
     return Stack(children: [
@@ -272,24 +229,75 @@ class _ChatScreenState extends State<ChatScreen> {
     ]);
   }
 
-  void _sendMessage() {
-    String message = _messageController.text;
-    // print("hello");
-    // print(message);
-    if (message.isNotEmpty) {
-      setState(() {
-        messages.insert(0, message); // Insert at the top
-        _messageController.clear(); // Clear the input field
-      });
+  
 
-      // // Scroll to the top
-      // _scrollController.animateTo(
-      //   _scrollController.position.minScrollExtent,
-      //   duration: Duration(milliseconds: 300),
-      //   curve: Curves.easeOut,
-      // );
+ 
+  Widget _buildMessageContainer(Map<String, dynamic> message) {
+    double screenWidth = MediaQuery.of(context).size.width;
+    double maxWidth = screenWidth * 0.9;
+
+    final isUserMessage = message['sender'] == 'user';
+
+    return Row(
+      mainAxisAlignment: isUserMessage ? MainAxisAlignment.end : MainAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: IconButton(
+            icon: Image.asset(
+              'assets/images/edit.png',
+              height: 20,
+              width: 20,
+            ),
+            onPressed: () {},
+          ),
+        ),
+        Container(
+          margin: EdgeInsets.only(left: 0, bottom: 8),
+          constraints: BoxConstraints(
+            maxWidth: maxWidth,
+          ),
+          decoration: BoxDecoration(
+            color: isUserMessage ? Color(0xFF7356E8) : Color(0xFFDFDFF4),
+            borderRadius: BorderRadius.only(
+              topRight: Radius.circular(16),
+              bottomLeft: Radius.circular(16),
+              bottomRight: Radius.circular(16),
+            ),
+          ),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(16, 8, 8, 8),
+            child: Text(
+              message['text'],
+              style: TextStyle(
+                color: isUserMessage ? Colors.white : Colors.black,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+
+
+  void _sendMessage() async {
+    String message = _messageController.text.trim();
+
+    if (message.isNotEmpty) {
+     
+      setState(() {
+        messages.insert(0, {'text': message, 'sender': 'user'}); 
+        _messageController.clear(); 
+      });
+      String apiResponse = await fetchResponseFromAPI(message);
+      setState(() {
+        messages.insert(0, {'text': apiResponse, 'sender': 'server'}); 
+      });
     }
   }
+
 }
 
 class CustomCupertinoIcons {
@@ -297,3 +305,28 @@ class CustomCupertinoIcons {
       fontFamily: CupertinoIcons.iconFont,
       fontPackage: CupertinoIcons.iconFontPackage);
 }
+
+
+
+Future<String> fetchResponseFromAPI(String userInput) async {
+  try {
+    final response = await http.post(
+      Uri.parse('http://localhost:5000/process_query'),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'user_input': userInput}), 
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+      return data['text_response']; 
+    } else {
+      throw Exception('Failed to load response: ${response.statusCode} - ${response.reasonPhrase}');
+    }
+  } catch (e) {
+    throw Exception('Failed to make the API request: $e');
+  }
+}
+
+
