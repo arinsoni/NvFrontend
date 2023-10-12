@@ -4,7 +4,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http; // Import the HTTP package for making API requests
+import 'package:http/http.dart'
+    as http; // Import the HTTP package for making API requests
 import 'dart:convert';
 
 void main() {
@@ -27,10 +28,66 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-    final List<Map<String, dynamic>> messages = [];
+  final List<Map<String, dynamic>> messages = [];
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _messageController = TextEditingController();
-   String originalMessage = ""; 
+  String originalMessage = "";
+
+  // fetch api response from server
+  Future<Map<String, dynamic>> fetchResponseFromAPI(String userInput) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:5000/process_query'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'user_input': userInput}),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        return data;
+      } else {
+        throw Exception(
+            'Failed to load response: ${response.statusCode} - ${response.reasonPhrase}');
+      }
+    } catch (e) {
+      throw Exception('Failed to make the API request: $e');
+    }
+  }
+
+  // send user inout to server
+  void _sendMessage() async {
+    String message = _messageController.text.trim();
+
+    if (message.isNotEmpty) {
+      if (originalMessage.isNotEmpty) {
+        // Replace the original message with the edited one
+        setState(() {
+          for (var i = 0; i < messages.length; i++) {
+            if (messages[i]['text'] == originalMessage) {
+              messages[i]['text'] = message;
+              originalMessage = ""; // Clear the original message
+              _messageController.clear();
+              break;
+            }
+          }
+        });
+      } else {
+        setState(() {
+          messages.insert(0, {'text': message, 'sender': 'user'});
+          _messageController.clear();
+        });
+      }
+      Map<String, dynamic> apiResponse = await fetchResponseFromAPI(message);
+      setState(() {
+        messages.insert(
+            0, {'text': apiResponse['text_response'], 'sender': 'server'});
+      });
+      
+
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -133,14 +190,11 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-
   Widget _buildMessageInput() {
     return Stack(children: [
-
-       Container(
-          color: Colors.white, // Your overlay color
-        ),
-      
+      Container(
+        color: Colors.white, // Your overlay color
+      ),
       Container(
           padding: EdgeInsets.only(left: 8.0, right: 8, top: 8),
           decoration: BoxDecoration(
@@ -230,9 +284,6 @@ class _ChatScreenState extends State<ChatScreen> {
     ]);
   }
 
-  
-
- 
   Widget _buildMessageContainer(Map<String, dynamic> message) {
     double screenWidth = MediaQuery.of(context).size.width;
     double maxWidth = screenWidth * 0.9;
@@ -240,7 +291,8 @@ class _ChatScreenState extends State<ChatScreen> {
     final isUserMessage = message['sender'] == 'user';
 
     return Row(
-      mainAxisAlignment: isUserMessage ? MainAxisAlignment.end : MainAxisAlignment.start,
+      mainAxisAlignment:
+          isUserMessage ? MainAxisAlignment.end : MainAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 8.0),
@@ -268,11 +320,12 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           decoration: BoxDecoration(
             color: isUserMessage ? Color(0xFF7356E8) : Color(0xFFDFDFF4),
-            borderRadius:  BorderRadius.only(
+            borderRadius: BorderRadius.only(
               topRight: Radius.circular(16),
-              topLeft: isUserMessage ? Radius.circular(16) : Radius.circular(0) ,
+              topLeft: isUserMessage ? Radius.circular(16) : Radius.circular(0),
               bottomLeft: Radius.circular(16),
-              bottomRight: isUserMessage? Radius.circular(0) : Radius.circular(16) ,
+              bottomRight:
+                  isUserMessage ? Radius.circular(0) : Radius.circular(16),
             ),
           ),
           child: Padding(
@@ -289,69 +342,13 @@ class _ChatScreenState extends State<ChatScreen> {
       ],
     );
   }
-
-  void _sendMessage() async {
-    String message = _messageController.text.trim();
-
-    if (message.isNotEmpty) {
-      if (originalMessage.isNotEmpty) {
-        // Replace the original message with the edited one
-        setState(() {
-          for (var i = 0; i < messages.length; i++) {
-            if (messages[i]['text'] == originalMessage) {
-              messages[i]['text'] = message;
-              originalMessage = ""; // Clear the original message
-              _messageController.clear();
-              break;
-            }
-          }
-        });
-      } else {
-      setState(() {
-        messages.insert(0, {'text': message, 'sender': 'user'}); 
-        _messageController.clear(); 
-      });
-    }
-      String apiResponse = await fetchResponseFromAPI(message);
-      setState(() {
-        messages.insert(0, {'text': apiResponse, 'sender': 'server'}); 
-      });
-    }
-  }
-
 }
-
-
 
 class CustomCupertinoIcons {
   static const IconData paperplane = IconData(0xf733,
       fontFamily: CupertinoIcons.iconFont,
       fontPackage: CupertinoIcons.iconFontPackage);
 }
-
-
-
-Future<String> fetchResponseFromAPI(String userInput) async {
-  try {
-    final response = await http.post(
-      Uri.parse('http://localhost:5000/process_query'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({'user_input': userInput}), 
-    );
-
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-      return data['text_response']; 
-    } else {
-      throw Exception('Failed to load response: ${response.statusCode} - ${response.reasonPhrase}');
-    }
-  } catch (e) {
-    throw Exception('Failed to make the API request: $e');
-  }
-}
-
 
 class ChatMessage {
   final String id; // Unique identifier for each message
