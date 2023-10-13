@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "945641019534",
+    "project_id": "nvsir-394601",
+    "storage_bucket": "nvsir-394601.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:945641019534:android:e1808001cdbbb0018ed1df",
+        "android_client_info": {
+          "package_name": "com.example.nvsirai"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDG7I6O6ByZYbLZemrv653kkLe4ugqXnL4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart'
     as http; // Import the HTTP package for making API requests
 import 'dart:convert';
+import 'package:just_audio/just_audio.dart';
+import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 
 void main() {
   runApp(ChatApp());
@@ -32,6 +34,20 @@ class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _messageController = TextEditingController();
   String originalMessage = "";
+  String audio_url = "";
+
+  late AudioPlayer _audioPlayer;
+
+  @override
+  void initState() {
+    super.initState();
+    _audioPlayer = AudioPlayer();
+  }
+
+  Future<void> _playAudio() async {
+    await _audioPlayer.setUrl(audio_url);
+    _audioPlayer.play();
+  }
 
   // fetch api response from server
   Future<Map<String, dynamic>> fetchResponseFromAPI(String userInput) async {
@@ -61,31 +77,50 @@ class _ChatScreenState extends State<ChatScreen> {
     String message = _messageController.text.trim();
 
     if (message.isNotEmpty) {
-      if (originalMessage.isNotEmpty) {
-        // Replace the original message with the edited one
-        setState(() {
+      setState(() {
+        audio_url = ''; // Clear the audio URL when a new message is sent
+        if (originalMessage.isNotEmpty) {
+          // Replace the original message with the edited one
+          print("All messages $messages");
+         
+         if (originalMessage.isNotEmpty) {
+          // Find the index of the original user message
+          int index = messages.indexWhere((m) => m['text'] == originalMessage && m['sender'] == 'user');
+          
+          if (index != -1 && index - 1 >= 0 && messages[index - 1]['sender'] == 'server') {
+            // Remove the server’s response associated with the original user message
+            messages.removeAt(index - 1);
+          }
+         }
+
           for (var i = 0; i < messages.length; i++) {
             if (messages[i]['text'] == originalMessage) {
               messages[i]['text'] = message;
-              originalMessage = ""; // Clear the original message
-              _messageController.clear();
               break;
             }
           }
-        });
-      } else {
-        setState(() {
+          originalMessage = ""; // Clear the original message
+        } else {
           messages.insert(0, {'text': message, 'sender': 'user'});
-          _messageController.clear();
-        });
-      }
-      Map<String, dynamic> apiResponse = await fetchResponseFromAPI(message);
-      setState(() {
-        messages.insert(
-            0, {'text': apiResponse['text_response'], 'sender': 'server'});
+        }
+        _messageController.clear();
       });
-      
 
+      Map<String, dynamic> apiResponse = await fetchResponseFromAPI(message);
+      print(apiResponse);
+      setState(() {
+        messages.insert(0, {
+          'text': apiResponse['text_response'],
+          'sender': 'server',
+          'audio': apiResponse['audio_response'] ?? null
+        });
+        if (apiResponse['audio_response'] != null) {
+          print("Old Audio URL: $audio_url"); // Add this line
+          audio_url = apiResponse['audio_response'];
+          print("New Audio URL: $audio_url"); // Add this line
+          // _playAudio();
+        }
+      });
     }
   }
 
@@ -285,10 +320,11 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildMessageContainer(Map<String, dynamic> message) {
+      final isUserMessage = message['sender'] == 'user';
     double screenWidth = MediaQuery.of(context).size.width;
-    double maxWidth = screenWidth * 0.9;
+    double maxWidth = isUserMessage ? screenWidth * 0.8 : screenWidth * 0.8;
 
-    final isUserMessage = message['sender'] == 'user';
+  
 
     return Row(
       mainAxisAlignment:
@@ -328,15 +364,21 @@ class _ChatScreenState extends State<ChatScreen> {
                   isUserMessage ? Radius.circular(0) : Radius.circular(16),
             ),
           ),
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(16, 8, 8, 8),
-            child: Text(
-              message['text'],
-              style: TextStyle(
-                color: isUserMessage ? Colors.white : Colors.black,
-                fontSize: 16,
+          child: Column(
+            children: [
+              if (message['audio'] != null && message['audio'].isNotEmpty)
+                AudioPlayerWidget(key: UniqueKey(), url: message['audio']),
+              Padding(
+                padding: EdgeInsets.fromLTRB(16, 8, 8, 8),
+                child: Text(
+                  message['text'],
+                  style: TextStyle(
+                    color: isUserMessage ? Colors.white : Colors.black,
+                    fontSize: 16,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ],
@@ -360,4 +402,83 @@ class ChatMessage {
     required this.text,
     required this.isUserMessage,
   });
+}
+
+class AudioPlayerWidget extends StatefulWidget {
+  final String url;
+
+  const AudioPlayerWidget({Key? key, required this.url}) : super(key: key);
+
+  @override
+  _AudioPlayerWidgetState createState() => _AudioPlayerWidgetState();
+}
+
+class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
+  late AudioPlayer _audioPlayer;
+  bool isPlaying = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _audioPlayer = AudioPlayer();
+    _initAudioPlayer();
+  }
+
+  _initAudioPlayer() async {
+    await _audioPlayer.setUrl(widget.url);
+
+    _audioPlayer.playerStateStream.listen((state) {
+      setState(() {
+        isPlaying = state.playing;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  void _updateAudioPlayer(String newUrl) async {
+    await _audioPlayer.dispose();
+    _audioPlayer = AudioPlayer();
+    await _audioPlayer.setUrl(newUrl);
+    _audioPlayer.play();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        StreamBuilder<Duration>(
+          stream: _audioPlayer.positionStream,
+          builder: (context, snapshot) {
+            final position = snapshot.data ?? Duration.zero;
+            return StreamBuilder<Duration>(
+              stream: _audioPlayer.durationStream
+                  .where((duration) => duration != null)
+                  .cast<Duration>(),
+              builder: (context, snapshot) {
+                final duration = snapshot.data ?? Duration.zero;
+                return ProgressBar(
+                  progress: position,
+                  total: duration,
+                  onSeek: (duration) {
+                    _audioPlayer.seek(duration);
+                  },
+                );
+              },
+            );
+          },
+        ),
+        IconButton(
+          icon: Icon(isPlaying ? Icons.pause : Icons.play_arrow),
+          onPressed: () {
+            isPlaying ? _audioPlayer.pause() : _audioPlayer.play();
+          },
+        ),
+      ],
+    );
+  }
 }
