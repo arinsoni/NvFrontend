@@ -63,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _sendMessage() async {
-     print("in main $isLoading");
+    print("in main $isLoading");
     if (isLoading) {
       return;
     }
@@ -99,7 +99,6 @@ class _HomeScreenState extends State<HomeScreen> {
           messages.insert(0, {'text': message, 'sender': 'user'});
         }
         _messageController.clear();
-        
       });
 
       Map<String, dynamic> apiResponse = await fetchResponseFromAPI(message);
@@ -114,6 +113,7 @@ class _HomeScreenState extends State<HomeScreen> {
           audioUrl = apiResponse['audio_response'];
           // _playAudio();
         }
+
         isLoading = false;
       });
     } else {
@@ -219,13 +219,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   reverse: true,
                   itemBuilder: (context, index) {
                     return MessageContainer(
-                        message: messages[index],
-                        onEdit: (String text) {
-                          setState(() {
-                            _messageController.text = text;
-                            originalMessage = text;
-                          });
+                      message: messages[index],
+                      onEdit: (String text) {
+                        setState(() {
+                          _messageController.text = text;
+                          originalMessage = text;
                         });
+                      },
+                      isLoading: isLoading,
+                    );
                   },
                 ),
               ),
@@ -233,7 +235,8 @@ class _HomeScreenState extends State<HomeScreen> {
             MessageInput(
               messageController: _messageController,
               sendMessage: mySendMessageFunction,
-              onAddIconPressed: () {}, isLoading: isLoading,
+              onAddIconPressed: () {},
+              isLoading: isLoading,
             )
           ],
         ),
