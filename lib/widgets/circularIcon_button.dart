@@ -6,7 +6,7 @@ class CircularIconButton extends StatelessWidget {
   final double iconSize;
   final Function()? onPressed;
 
-  CircularIconButton({
+  const CircularIconButton({super.key, 
     required this.icon,
     required this.backgroundColor,
     this.iconSize = 20.0,
