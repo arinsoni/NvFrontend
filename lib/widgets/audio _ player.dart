@@ -23,7 +23,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
     _initAudioPlayer();
   }
 
-_initAudioPlayer() async {
+  _initAudioPlayer() async {
     await _audioPlayer.setUrl(widget.url);
 
     _audioPlayer.processingStateStream.listen((state) {
@@ -37,16 +37,13 @@ _initAudioPlayer() async {
         }
       });
     });
-}
-
+  }
 
   @override
   void dispose() {
     _audioPlayer.dispose();
     super.dispose();
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -62,16 +59,12 @@ _initAudioPlayer() async {
               color: Color(0xFFFFFFFF),
             ),
             child: Center(
-              child: StreamBuilder<ProcessingState>(
-                stream: _audioPlayer.processingStateStream,
+              child: StreamBuilder<bool>(
+                stream: _audioPlayer.playingStream,
                 builder: (context, snapshot) {
-                  if (snapshot.hasData) {
-                    final processingState =
-                        snapshot.data ?? ProcessingState.idle;
-                    isPlaying = processingState != ProcessingState.completed &&
-                        processingState != ProcessingState.idle &&
-                        _audioPlayer
-                            .playing; // Update this line according to your needs
+                  bool? isCurrentlyPlaying = snapshot.data;
+                  if (isCurrentlyPlaying != null) {
+                    isPlaying = isCurrentlyPlaying;
                   }
 
                   return IconButton(

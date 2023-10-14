@@ -42,7 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> deleteAllAudioFiles() async {
     final response = await http.delete(
-      Uri.parse('http://localhost:5000/delete-audios'),
+      Uri.parse('https://arinsoni.pythonanywhere.com/delete-audios'),
     );
 
     if (response.statusCode == 200) {
@@ -55,7 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<Map<String, dynamic>> fetchResponseFromAPI(String userInput) async {
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:5000/process_query'),
+        Uri.parse('https://arinsoni.pythonanywhere.com/process_query'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -117,6 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         if (apiResponse['audio_response'] != null) {
           audioUrl = apiResponse['audio_response'];
+
         }
 
         isLoading = false;
@@ -136,16 +137,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String message = messages[index + 1]['text'];
 
-  // Removing the message and setting isLoading to true
   setState(() {
     messages.removeAt(index);
     isLoading = true;
   });
 
-  // Performing the async work outside of the setState
   Map<String, dynamic> apiResponse = await fetchResponseFromAPI(message);
 
-  // Updating the state after async work has been completed
   setState(() {
     messages.insert(0, {
       'text': apiResponse['text_response'],
@@ -310,7 +308,7 @@ class _HomeScreenState extends State<HomeScreen> {
               sendMessage: mySendMessageFunction,
               onAddIconPressed: () {},
               isLoading: isLoading,
-            )
+            ),
           ],
         ),
       ),
