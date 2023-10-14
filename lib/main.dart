@@ -3,8 +3,7 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:nvsirai/widgets/message_container.dart';
 import 'package:nvsirai/widgets/message_input.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:http/http.dart'
-    as http; 
+import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 void main() {
@@ -40,6 +39,18 @@ class _HomeScreenState extends State<HomeScreen> {
   String originalMessage = "";
   String audioUrl = "";
   bool isLoading = false;
+
+  Future<void> deleteAllAudioFiles() async {
+    final response = await http.delete(
+      Uri.parse('http://localhost:5000/delete-audios'),
+    );
+
+    if (response.statusCode == 200) {
+      print('All audio files deleted successfully');
+    } else {
+      throw Exception('Failed to delete audio files');
+    }
+  }
 
   Future<Map<String, dynamic>> fetchResponseFromAPI(String userInput) async {
     try {
@@ -118,6 +129,55 @@ class _HomeScreenState extends State<HomeScreen> {
     _sendMessage();
   }
 
+  void _refreshMessage(int index) async {
+  if (isLoading) {
+    return;
+  }
+
+  String message = messages[index + 1]['text'];
+
+  // Removing the message and setting isLoading to true
+  setState(() {
+    messages.removeAt(index);
+    isLoading = true;
+  });
+
+  // Performing the async work outside of the setState
+  Map<String, dynamic> apiResponse = await fetchResponseFromAPI(message);
+
+  // Updating the state after async work has been completed
+  setState(() {
+    messages.insert(0, {
+      'text': apiResponse['text_response'],
+      'sender': 'server',
+      'audio': apiResponse['audio_response']
+    });
+
+    if (apiResponse['audio_response'] != null) {
+      audioUrl = apiResponse['audio_response'];
+    }
+
+    isLoading = false;
+  });
+}
+
+  void _clearHistory() async {
+  print('Clearing history');
+  try {
+    await deleteAllAudioFiles();
+    print('Files deleted successfully');
+
+    setState(() {
+      messages.clear(); 
+    });
+
+    print('Messages cleared');
+  } catch (e) {
+    print('Error clearing history: $e');
+  }
+}
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -180,12 +240,28 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
-            child: SvgPicture.asset(
-              'assets/svg/history.svg',
-              width: 20.0,
-              height: 20.0,
-              colorFilter:
-                  const ColorFilter.mode(Color(0xFF4E4E4E), BlendMode.srcIn),
+            child: IconButton(
+              icon: SvgPicture.asset(
+                'assets/svg/history.svg',
+                width: 20.0,
+                height: 20.0,
+                colorFilter: const ColorFilter.mode(
+                  Color(0xFF4E4E4E),
+                  BlendMode.srcIn,
+                ),
+                semanticsLabel: 'A red up arrow',
+              ),
+              onPressed: isLoading
+                  ? null
+                  : () async {
+                      try {
+                        await deleteAllAudioFiles();
+                        _clearHistory();
+                        print('Files deleted successfully');
+                      } catch (e) {
+                        print('Error deleting files: $e');
+                      }
+                    },
             ),
           ),
         ],
@@ -203,16 +279,14 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: ListView.builder(
-                  itemCount:
-                      messages.length + (isLoading ? 1 : 0), 
+                  itemCount: messages.length + (isLoading ? 1 : 0),
                   controller: _scrollController,
                   reverse: true,
                   itemBuilder: (context, index) {
                     if (isLoading && index == 0) {
-                      return _buildLoadingIndicator(); 
+                      return _buildLoadingIndicator();
                     }
 
-                    
                     int messageIndex = isLoading ? index - 1 : index;
 
                     return MessageContainer(
@@ -224,9 +298,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         });
                       },
                       isLoading: isLoading && index == 0,
-                      onRefresh:
-                          _refreshMessage, 
-                      index: messageIndex, 
+                      onRefresh: _refreshMessage,
+                      index: messageIndex,
                     );
                   },
                 ),
@@ -265,39 +338,5 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
-  }
-
-  void _refreshMessage(int index) async {
-    if (isLoading) {
-      return;
-    }
-
-    setState(() {
-      isLoading = true;
-    });
-
-    String message =
-        messages[index + 1]['text']; 
-
-    setState(() {
-      messages.removeAt(index);
-    });
-
-    await Future.delayed(Duration(seconds: 2));
-
-    Map<String, dynamic> apiResponse = await fetchResponseFromAPI(message);
-    setState(() {
-      messages.insert(0, {
-        'text': apiResponse['text_response'],
-        'sender': 'server',
-        'audio': apiResponse['audio_response']
-      });
-
-      if (apiResponse['audio_response'] != null) {
-        audioUrl = apiResponse['audio_response'];
-      }
-
-      isLoading = false;
-    });
   }
 }
