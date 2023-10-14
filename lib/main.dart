@@ -38,6 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _messageController = TextEditingController();
   String originalMessage = "";
   String audioUrl = "";
+  bool isLoading = false;
 
   Future<Map<String, dynamic>> fetchResponseFromAPI(String userInput) async {
     try {
@@ -62,24 +63,27 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _sendMessage() async {
+     print("in main $isLoading");
+    if (isLoading) {
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
     String message = _messageController.text.trim();
 
     if (message.isNotEmpty) {
       setState(() {
-        audioUrl = ''; // Clear the audio URL when a new message is sent
+        audioUrl = '';
         if (originalMessage.isNotEmpty) {
-          // Replace the original message with the edited one
-          // print("All messages $messages");
-
           if (originalMessage.isNotEmpty) {
-            // Find the index of the original user message
             int index = messages.indexWhere(
                 (m) => m['text'] == originalMessage && m['sender'] == 'user');
 
             if (index != -1 &&
                 index - 1 >= 0 &&
                 messages[index - 1]['sender'] == 'server') {
-              // Remove the server’s response associated with the original user message
               messages.removeAt(index - 1);
             }
           }
@@ -90,11 +94,12 @@ class _HomeScreenState extends State<HomeScreen> {
               break;
             }
           }
-          originalMessage = ""; // Clear the original message
+          originalMessage = "";
         } else {
           messages.insert(0, {'text': message, 'sender': 'user'});
         }
         _messageController.clear();
+        
       });
 
       Map<String, dynamic> apiResponse = await fetchResponseFromAPI(message);
@@ -109,6 +114,11 @@ class _HomeScreenState extends State<HomeScreen> {
           audioUrl = apiResponse['audio_response'];
           // _playAudio();
         }
+        isLoading = false;
+      });
+    } else {
+      setState(() {
+        isLoading = false;
       });
     }
   }
@@ -223,7 +233,7 @@ class _HomeScreenState extends State<HomeScreen> {
             MessageInput(
               messageController: _messageController,
               sendMessage: mySendMessageFunction,
-              onAddIconPressed: () {},
+              onAddIconPressed: () {}, isLoading: isLoading,
             )
           ],
         ),

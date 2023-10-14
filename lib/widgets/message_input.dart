@@ -5,23 +5,24 @@ import 'circularIcon_button.dart';
 
 typedef SendMessageFunction = void Function(String message);
 
-
 class MessageInput extends StatelessWidget {
   final TextEditingController messageController;
   final SendMessageFunction sendMessage;
   final VoidCallback onAddIconPressed;
+  final bool isLoading;
   const MessageInput(
       {Key? key,
       required this.messageController,
       required this.sendMessage,
-      required this.onAddIconPressed})
+      required this.onAddIconPressed,
+      required this.isLoading})
       : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Stack(children: [
       Container(
-        color: Colors.white, 
+        color: Colors.white,
       ),
       Container(
           padding: const EdgeInsets.only(left: 8.0, right: 8, top: 8),
@@ -39,7 +40,11 @@ class MessageInput extends StatelessWidget {
                 CircularIconButton(
                   icon: Icons.add,
                   backgroundColor: const Color(0xFF7356E8),
-                  onPressed: () {}, height: 37, width: 37, iconSize: 20, iconColor: Colors.white, 
+                  onPressed: () {},
+                  height: 37,
+                  width: 37,
+                  iconSize: 20,
+                  iconColor: Colors.white,
                 ),
                 Expanded(
                   child: Padding(
@@ -51,7 +56,7 @@ class MessageInput extends StatelessWidget {
                         border: Border.all(color: const Color(0x62000000)),
                       ),
                       constraints: const BoxConstraints(
-                        maxHeight: 100.0, 
+                        maxHeight: 100.0,
                       ),
                       child: Stack(
                         children: <Widget>[
@@ -66,11 +71,12 @@ class MessageInput extends StatelessWidget {
                                       EdgeInsets.only(left: 16.0, right: 48.0),
                                   border: InputBorder.none,
                                 ),
-                                maxLines:
-                                    null, 
+                                maxLines: null,
                                 onSubmitted: (message) {
                                   sendMessage(message);
+                                  print("in input $isLoading");
                                 },
+                                enabled: !isLoading,
                               ),
                             ],
                           ),
@@ -102,9 +108,11 @@ class MessageInput extends StatelessWidget {
                     ),
                     semanticsLabel: 'A red up arrow',
                   ),
-                  onPressed: () {
-                    sendMessage(messageController.text);
-                  },
+                  onPressed: isLoading
+                      ? null
+                      : () {
+                          sendMessage(messageController.text);
+                        },
                 ),
               ],
             )

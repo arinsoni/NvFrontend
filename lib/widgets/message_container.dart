@@ -80,7 +80,7 @@ class MessageContainer extends StatelessWidget {
                 if (message['audio'] != null && message['audio'].isNotEmpty)
                   AudioPlayerWidget(key: UniqueKey(), url: message['audio']),
                 Padding(
-                  padding:  EdgeInsets.fromLTRB(16, isUserMessage ? 8 : 0, 8, 8),
+                  padding:  EdgeInsets.fromLTRB(16, isUserMessage ? 8 : 2, 8, 8),
                   child: Text(
                     message['text'],
                     style: TextStyle(
