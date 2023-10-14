@@ -8,12 +8,16 @@ class MessageContainer extends StatelessWidget {
   final Map<String, dynamic> message;
   final Function(String) onEdit;
   final bool isLoading;
+  final Function(int) onRefresh;
+final int index;
+
+
 
   const MessageContainer(
       {Key? key,
       required this.message,
       required this.onEdit,
-      required this.isLoading})
+      required this.isLoading,  required this.index, required this.onRefresh})
       : super(key: key);
 
   @override
@@ -105,22 +109,25 @@ class MessageContainer extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.only(left: 8, bottom: 8.0),
-            child: !isUserMessage
-                ? CircularIconButton(
-                    icon: Icons.refresh,
-                    backgroundColor: const Color(0xFFEBEBEB),
-                    onPressed: () {},
-                    height: 30,
-                    width: 30,
-                    iconSize: 20,
-                    iconColor: const Color(0xFF9B9B9B),
-                  )
-                : const SizedBox(
-                    height: 0,
-                    width: 0,
-                  ),
-          ),
+  padding:  EdgeInsets.only(left: 8, bottom: 8.0),
+  child: !isUserMessage
+      ? CircularIconButton(
+          icon: Icons.refresh,
+          backgroundColor: const Color(0xFFEBEBEB),
+          onPressed: () {
+            onRefresh!(index);  
+          },
+          height: 30,
+          width: 30,
+          iconSize: 20,
+          iconColor: const Color(0xFF9B9B9B),
+        )
+      : const SizedBox(
+          height: 0,
+          width: 0,
+        ),
+),
+
         ],
       );
     }

@@ -4,7 +4,7 @@ import 'package:nvsirai/widgets/message_container.dart';
 import 'package:nvsirai/widgets/message_input.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart'
-    as http; // Import the HTTP package for making API requests
+    as http; 
 import 'dart:convert';
 
 void main() {
@@ -64,55 +64,54 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _sendMessage() async {
-  if (isLoading) {
-    return;
-  }
+    if (isLoading) {
+      return;
+    }
 
-  String message = _messageController.text.trim();
+    String message = _messageController.text.trim();
 
-  if (message.isNotEmpty) {
-    setState(() {
-      audioUrl = '';
+    if (message.isNotEmpty) {
+      setState(() {
+        audioUrl = '';
 
-      if (originalMessage.isNotEmpty) {
-        int index = messages.indexWhere((m) => m['text'] == originalMessage && m['sender'] == 'user');
+        if (originalMessage.isNotEmpty) {
+          int index = messages.indexWhere(
+              (m) => m['text'] == originalMessage && m['sender'] == 'user');
 
-        if (index != -1) {
-          messages[index]['text'] = message; 
-          if (index - 1 >= 0 && messages[index - 1]['sender'] == 'server') {
-            messages.removeAt(index - 1); 
+          if (index != -1) {
+            messages[index]['text'] = message;
+            if (index - 1 >= 0 && messages[index - 1]['sender'] == 'server') {
+              messages.removeAt(index - 1);
+            }
           }
+
+          originalMessage = "";
+        } else {
+          messages.insert(0, {'text': message, 'sender': 'user'});
         }
 
-        originalMessage = ""; 
-      } else {
-        messages.insert(0, {'text': message, 'sender': 'user'}); 
-      }
-
-      _messageController.clear();
-      isLoading = true;
-    });
-
-   
-    await Future.delayed(Duration(seconds: 2));
-
-    Map<String, dynamic> apiResponse = await fetchResponseFromAPI(message);
-    setState(() {
-      messages.insert(0, {
-        'text': apiResponse['text_response'],
-        'sender': 'server',
-        'audio': apiResponse['audio_response']
+        _messageController.clear();
+        isLoading = true;
       });
 
-      if (apiResponse['audio_response'] != null) {
-        audioUrl = apiResponse['audio_response'];
-      }
+      await Future.delayed(Duration(seconds: 2));
 
-      isLoading = false;
-    });
+      Map<String, dynamic> apiResponse = await fetchResponseFromAPI(message);
+      setState(() {
+        messages.insert(0, {
+          'text': apiResponse['text_response'],
+          'sender': 'server',
+          'audio': apiResponse['audio_response']
+        });
+
+        if (apiResponse['audio_response'] != null) {
+          audioUrl = apiResponse['audio_response'];
+        }
+
+        isLoading = false;
+      });
+    }
   }
-}
-
 
   void mySendMessageFunction(String message) {
     _messageController.text = message;
@@ -157,12 +156,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     Padding(
                       padding: const EdgeInsets.only(right: 4.0),
                       child: Container(
-                          width: 8.0, 
+                          width: 8.0,
                           height: 8.0,
                           decoration: const BoxDecoration(
-                            shape: BoxShape.circle, 
-                            color: Colors
-                                .green, 
+                            shape: BoxShape.circle,
+                            color: Colors.green,
                           )),
                     ),
                     const Text(
@@ -202,35 +200,38 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           children: <Widget>[
             Expanded(
-  child: Padding(
-    padding: const EdgeInsets.only(right: 8),
-    child: ListView.builder(
-      itemCount: messages.length + (isLoading ? 1 : 0), // Add 1 if loading
-      controller: _scrollController,
-      reverse: true,
-      itemBuilder: (context, index) {
-        if (isLoading && index == 0) {
-          return _buildLoadingIndicator(); // Replace with your loading widget
-        }
-        
-        // Correct the index if loading
-        int messageIndex = isLoading ? index - 1 : index;
+              child: Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ListView.builder(
+                  itemCount:
+                      messages.length + (isLoading ? 1 : 0), 
+                  controller: _scrollController,
+                  reverse: true,
+                  itemBuilder: (context, index) {
+                    if (isLoading && index == 0) {
+                      return _buildLoadingIndicator(); 
+                    }
 
-        return MessageContainer(
-          message: messages[messageIndex],
-          onEdit: (String text) {
-            setState(() {
-              _messageController.text = text;
-              originalMessage = text;
-            });
-          },
-          isLoading: isLoading && index == 0, 
-        );
-      },
-    ),
-  ),
-),
+                    
+                    int messageIndex = isLoading ? index - 1 : index;
 
+                    return MessageContainer(
+                      message: messages[messageIndex],
+                      onEdit: (String text) {
+                        setState(() {
+                          _messageController.text = text;
+                          originalMessage = text;
+                        });
+                      },
+                      isLoading: isLoading && index == 0,
+                      onRefresh:
+                          _refreshMessage, 
+                      index: messageIndex, 
+                    );
+                  },
+                ),
+              ),
+            ),
             MessageInput(
               messageController: _messageController,
               sendMessage: mySendMessageFunction,
@@ -244,9 +245,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildLoadingIndicator() {
-    return  Padding(
-      padding:  EdgeInsets.all(10.0),
-      child:  Row(
+    return const Padding(
+      padding: EdgeInsets.all(10.0),
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           SpinKitWave(
@@ -256,13 +257,47 @@ class _HomeScreenState extends State<HomeScreen> {
           SizedBox(width: 10),
           Text(
             'Typing...',
-            style: TextStyle(fontStyle: FontStyle.italic, fontSize: 20,
-            color: Color(0xFF9999999E)
-            ),
+            style: TextStyle(
+                fontStyle: FontStyle.italic,
+                fontSize: 20,
+                color: Color(0xFF9999999E)),
           ),
-          
         ],
       ),
     );
+  }
+
+  void _refreshMessage(int index) async {
+    if (isLoading) {
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    String message =
+        messages[index + 1]['text']; 
+
+    setState(() {
+      messages.removeAt(index);
+    });
+
+    await Future.delayed(Duration(seconds: 2));
+
+    Map<String, dynamic> apiResponse = await fetchResponseFromAPI(message);
+    setState(() {
+      messages.insert(0, {
+        'text': apiResponse['text_response'],
+        'sender': 'server',
+        'audio': apiResponse['audio_response']
+      });
+
+      if (apiResponse['audio_response'] != null) {
+        audioUrl = apiResponse['audio_response'];
+      }
+
+      isLoading = false;
+    });
   }
 }
