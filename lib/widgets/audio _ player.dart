@@ -23,15 +23,22 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
     _initAudioPlayer();
   }
 
-  _initAudioPlayer() async {
+_initAudioPlayer() async {
     await _audioPlayer.setUrl(widget.url);
 
-    _audioPlayer.playerStateStream.listen((state) {
+    _audioPlayer.processingStateStream.listen((state) {
       setState(() {
-        isPlaying = state.playing;
+        if (state == ProcessingState.completed) {
+          _audioPlayer.pause();
+          _audioPlayer.seek(Duration.zero, index: 0);
+          isPlaying = false;
+        } else {
+          isPlaying = _audioPlayer.playing;
+        }
       });
     });
-  }
+}
+
 
   @override
   void dispose() {
@@ -40,38 +47,78 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
   }
 
 
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        StreamBuilder<Duration>(
-          stream: _audioPlayer.positionStream,
-          builder: (context, snapshot) {
-            final position = snapshot.data ?? Duration.zero;
-            return StreamBuilder<Duration>(
-              stream: _audioPlayer.durationStream
-                  .where((duration) => duration != null)
-                  .cast<Duration>(),
-              builder: (context, snapshot) {
-                final duration = snapshot.data ?? Duration.zero;
-                return ProgressBar(
-                  progress: position,
-                  total: duration,
-                  onSeek: (duration) {
-                    _audioPlayer.seek(duration);
-                  },
-                );
-              },
-            );
-          },
-        ),
-        IconButton(
-          icon: Icon(isPlaying ? Icons.pause : Icons.play_arrow),
-          onPressed: () {
-            isPlaying ? _audioPlayer.pause() : _audioPlayer.play();
-          },
-        ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.only(top: 10.0, left: 10, right: 10),
+      child: Row(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Color(0xFFFFFFFF),
+            ),
+            child: Center(
+              child: StreamBuilder<ProcessingState>(
+                stream: _audioPlayer.processingStateStream,
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    final processingState =
+                        snapshot.data ?? ProcessingState.idle;
+                    isPlaying = processingState != ProcessingState.completed &&
+                        processingState != ProcessingState.idle &&
+                        _audioPlayer
+                            .playing; // Update this line according to your needs
+                  }
+
+                  return IconButton(
+                    icon: Icon(isPlaying ? Icons.pause : Icons.play_arrow),
+                    onPressed: () {
+                      if (isPlaying) {
+                        _audioPlayer.pause();
+                      } else {
+                        _audioPlayer.play();
+                      }
+                    },
+                    padding: EdgeInsets.zero,
+                  );
+                },
+              ),
+            ),
+          ),
+          StreamBuilder<Duration>(
+            stream: _audioPlayer.positionStream,
+            builder: (context, snapshot) {
+              final position = snapshot.data ?? Duration.zero;
+              return StreamBuilder<Duration>(
+                stream: _audioPlayer.durationStream
+                    .where((duration) => duration != null)
+                    .cast<Duration>(),
+                builder: (context, snapshot) {
+                  final duration = snapshot.data ?? Duration.zero;
+                  return Expanded(
+                    child: Padding(
+                      padding:
+                          const EdgeInsets.only(top: 8.0, right: 8, left: 8),
+                      child: ProgressBar(
+                        progress: position,
+                        total: duration,
+                        onSeek: (duration) {
+                          _audioPlayer.seek(duration);
+                        },
+                        thumbRadius: 3,
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 }

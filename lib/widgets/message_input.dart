@@ -21,7 +21,7 @@ class MessageInput extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(children: [
       Container(
-        color: Colors.white, // Your overlay color
+        color: Colors.white, 
       ),
       Container(
           padding: const EdgeInsets.only(left: 8.0, right: 8, top: 8),
@@ -39,7 +39,7 @@ class MessageInput extends StatelessWidget {
                 CircularIconButton(
                   icon: Icons.add,
                   backgroundColor: const Color(0xFF7356E8),
-                  onPressed: () {},
+                  onPressed: () {}, height: 37, width: 37, iconSize: 20, iconColor: Colors.white, 
                 ),
                 Expanded(
                   child: Padding(
@@ -51,7 +51,7 @@ class MessageInput extends StatelessWidget {
                         border: Border.all(color: const Color(0x62000000)),
                       ),
                       constraints: const BoxConstraints(
-                        maxHeight: 100.0, // Set the maximum height you want
+                        maxHeight: 100.0, 
                       ),
                       child: Stack(
                         children: <Widget>[
@@ -61,13 +61,13 @@ class MessageInput extends StatelessWidget {
                               TextField(
                                 controller: messageController,
                                 decoration: const InputDecoration(
-                                  hintText: 'Type your message...',
+                                  hintText: 'Ask a question',
                                   contentPadding:
                                       EdgeInsets.only(left: 16.0, right: 48.0),
                                   border: InputBorder.none,
                                 ),
                                 maxLines:
-                                    null, // Allow the TextField to grow in height
+                                    null, 
                                 onSubmitted: (message) {
                                   sendMessage(message);
                                 },

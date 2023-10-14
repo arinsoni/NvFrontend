@@ -39,9 +39,6 @@ class _HomeScreenState extends State<HomeScreen> {
   String originalMessage = "";
   String audioUrl = "";
 
-
-
- 
   Future<Map<String, dynamic>> fetchResponseFromAPI(String userInput) async {
     try {
       final response = await http.post(
@@ -63,7 +60,6 @@ class _HomeScreenState extends State<HomeScreen> {
       throw Exception('Failed to make the API request: $e');
     }
   }
-
 
   void _sendMessage() async {
     String message = _messageController.text.trim();
@@ -118,8 +114,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void mySendMessageFunction(String message) {
-    _messageController.text = message; 
-    _sendMessage(); 
+    _messageController.text = message;
+    _sendMessage();
   }
 
   @override
@@ -189,7 +185,8 @@ class _HomeScreenState extends State<HomeScreen> {
               'assets/svg/history.svg',
               width: 20.0,
               height: 20.0,
-              colorFilter: const ColorFilter.mode(Color(0xFF4E4E4E), BlendMode.srcIn),
+              colorFilter:
+                  const ColorFilter.mode(Color(0xFF4E4E4E), BlendMode.srcIn),
             ),
           ),
         ],
@@ -205,11 +202,11 @@ class _HomeScreenState extends State<HomeScreen> {
           children: <Widget>[
             Expanded(
               child: Padding(
-                padding: const  EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.only(right: 8),
                 child: ListView.builder(
                   itemCount: messages.length,
                   controller: _scrollController,
-                  reverse: true, 
+                  reverse: true,
                   itemBuilder: (context, index) {
                     return MessageContainer(
                         message: messages[index],
@@ -226,9 +223,7 @@ class _HomeScreenState extends State<HomeScreen> {
             MessageInput(
               messageController: _messageController,
               sendMessage: mySendMessageFunction,
-              onAddIconPressed: () {
-               
-              },
+              onAddIconPressed: () {},
             )
           ],
         ),
