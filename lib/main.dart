@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:nvsirai/widgets/message_container.dart';
 import 'package:nvsirai/widgets/message_input.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -63,65 +64,55 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _sendMessage() async {
-    print("in main $isLoading");
-    if (isLoading) {
-      return;
-    }
+  if (isLoading) {
+    return;
+  }
 
+  String message = _messageController.text.trim();
+
+  if (message.isNotEmpty) {
     setState(() {
+      audioUrl = '';
+
+      if (originalMessage.isNotEmpty) {
+        int index = messages.indexWhere((m) => m['text'] == originalMessage && m['sender'] == 'user');
+
+        if (index != -1) {
+          messages[index]['text'] = message; 
+          if (index - 1 >= 0 && messages[index - 1]['sender'] == 'server') {
+            messages.removeAt(index - 1); 
+          }
+        }
+
+        originalMessage = ""; 
+      } else {
+        messages.insert(0, {'text': message, 'sender': 'user'}); 
+      }
+
+      _messageController.clear();
       isLoading = true;
     });
-    String message = _messageController.text.trim();
 
-    if (message.isNotEmpty) {
-      setState(() {
-        audioUrl = '';
-        if (originalMessage.isNotEmpty) {
-          if (originalMessage.isNotEmpty) {
-            int index = messages.indexWhere(
-                (m) => m['text'] == originalMessage && m['sender'] == 'user');
+   
+    await Future.delayed(Duration(seconds: 2));
 
-            if (index != -1 &&
-                index - 1 >= 0 &&
-                messages[index - 1]['sender'] == 'server') {
-              messages.removeAt(index - 1);
-            }
-          }
-
-          for (var i = 0; i < messages.length; i++) {
-            if (messages[i]['text'] == originalMessage) {
-              messages[i]['text'] = message;
-              break;
-            }
-          }
-          originalMessage = "";
-        } else {
-          messages.insert(0, {'text': message, 'sender': 'user'});
-        }
-        _messageController.clear();
+    Map<String, dynamic> apiResponse = await fetchResponseFromAPI(message);
+    setState(() {
+      messages.insert(0, {
+        'text': apiResponse['text_response'],
+        'sender': 'server',
+        'audio': apiResponse['audio_response']
       });
 
-      Map<String, dynamic> apiResponse = await fetchResponseFromAPI(message);
-      // print(apiResponse);
-      setState(() {
-        messages.insert(0, {
-          'text': apiResponse['text_response'],
-          'sender': 'server',
-          'audio': apiResponse['audio_response']
-        });
-        if (apiResponse['audio_response'] != null) {
-          audioUrl = apiResponse['audio_response'];
-          // _playAudio();
-        }
+      if (apiResponse['audio_response'] != null) {
+        audioUrl = apiResponse['audio_response'];
+      }
 
-        isLoading = false;
-      });
-    } else {
-      setState(() {
-        isLoading = false;
-      });
-    }
+      isLoading = false;
+    });
   }
+}
+
 
   void mySendMessageFunction(String message) {
     _messageController.text = message;
@@ -166,12 +157,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     Padding(
                       padding: const EdgeInsets.only(right: 4.0),
                       child: Container(
-                          width: 8.0, // Adjust the width as needed
-                          height: 8.0, // Adjust the height as needed
+                          width: 8.0, 
+                          height: 8.0,
                           decoration: const BoxDecoration(
-                            shape: BoxShape.circle, // Create a circular shape
+                            shape: BoxShape.circle, 
                             color: Colors
-                                .green, // Set the background color to green
+                                .green, 
                           )),
                     ),
                     const Text(
@@ -211,27 +202,35 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           children: <Widget>[
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ListView.builder(
-                  itemCount: messages.length,
-                  controller: _scrollController,
-                  reverse: true,
-                  itemBuilder: (context, index) {
-                    return MessageContainer(
-                      message: messages[index],
-                      onEdit: (String text) {
-                        setState(() {
-                          _messageController.text = text;
-                          originalMessage = text;
-                        });
-                      },
-                      isLoading: isLoading,
-                    );
-                  },
-                ),
-              ),
-            ),
+  child: Padding(
+    padding: const EdgeInsets.only(right: 8),
+    child: ListView.builder(
+      itemCount: messages.length + (isLoading ? 1 : 0), // Add 1 if loading
+      controller: _scrollController,
+      reverse: true,
+      itemBuilder: (context, index) {
+        if (isLoading && index == 0) {
+          return _buildLoadingIndicator(); // Replace with your loading widget
+        }
+        
+        // Correct the index if loading
+        int messageIndex = isLoading ? index - 1 : index;
+
+        return MessageContainer(
+          message: messages[messageIndex],
+          onEdit: (String text) {
+            setState(() {
+              _messageController.text = text;
+              originalMessage = text;
+            });
+          },
+          isLoading: isLoading && index == 0, 
+        );
+      },
+    ),
+  ),
+),
+
             MessageInput(
               messageController: _messageController,
               sendMessage: mySendMessageFunction,
@@ -240,6 +239,29 @@ class _HomeScreenState extends State<HomeScreen> {
             )
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingIndicator() {
+    return  Padding(
+      padding:  EdgeInsets.all(10.0),
+      child:  Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          SpinKitWave(
+            color: Color(0xFF7356E8),
+            size: 20.0,
+          ),
+          SizedBox(width: 10),
+          Text(
+            'Typing...',
+            style: TextStyle(fontStyle: FontStyle.italic, fontSize: 20,
+            color: Color(0xFF9999999E)
+            ),
+          ),
+          
+        ],
       ),
     );
   }

@@ -49,11 +49,11 @@ class MessageContainer extends StatelessWidget {
                           width: 20,
                         ),
                         onPressed: () {
-                          if (isUserMessage) {
+                          
                             if (isUserMessage) {
                               onEdit(message['text']);
                             }
-                          }
+                        
                         },
                       ),
                     ),
