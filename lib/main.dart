@@ -42,6 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isFirstMessageSent = false;
   late Color qColor = Colors.transparent;
   late Color mColor = Colors.transparent;
+  bool isFavorite = false;
 
   Future<void> deleteAllAudioFiles() async {
     final response = await http.delete(
@@ -106,7 +107,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
           originalMessage = "";
         } else {
-          messages.insert(0, {'text': message, 'sender': 'user'});
+          messages.insert(0, {
+            'text': message,
+            'sender': 'user',
+            'favorite': false,
+          });
         }
 
         _messageController.clear();
@@ -185,15 +190,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _isQuestion() {
     setState(() {
-       qColor = Color(0xFFDFDFF4);
-       mColor = Colors.transparent;
+      qColor = Color(0xFFDFDFF4);
+      mColor = Colors.transparent;
     });
   }
 
   void _isMotivation() {
-     setState(() {
-       mColor = Color(0xFFDFDFF4);
-       qColor = Colors.transparent;
+    setState(() {
+      mColor = Color(0xFFDFDFF4);
+      qColor = Colors.transparent;
     });
   }
 
@@ -204,8 +209,11 @@ class _HomeScreenState extends State<HomeScreen> {
     String desc =
         "some response text here yes, count that as an answer. some response text here yes, count that as an answer. some response text here yes, ";
     final GlobalKey imageKey = GlobalKey();
+    final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
     return Scaffold(
+      key: _scaffoldKey,
+      endDrawer: _buildHistoryDrawer(),
       appBar: AppBar(
         backgroundColor: Colors.white,
         leading: IconButton(
@@ -276,17 +284,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 semanticsLabel: 'A red up arrow',
               ),
-              onPressed: isLoading
-                  ? null
-                  : () async {
-                      try {
-                        await deleteAllAudioFiles();
-                        _clearHistory();
-                        print('Files deleted successfully');
-                      } catch (e) {
-                        print('Error deleting files: $e');
-                      }
-                    },
+              onPressed: () => _scaffoldKey.currentState!.openEndDrawer(),
             ),
           ),
         ],
@@ -428,7 +426,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             Container(
                               margin: EdgeInsets.symmetric(horizontal: 10.0),
                               child: ElevatedButton(
-                                style:ButtonStyle(
+                                style: ButtonStyle(
                                   backgroundColor:
                                       MaterialStateProperty.all(mColor),
                                   elevation: MaterialStateProperty.all(0),
@@ -505,6 +503,145 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildHistoryDrawer() {
+    return Drawer(
+      child: AbsorbPointer(
+        absorbing: false,
+        child: Container(
+          decoration: const BoxDecoration(
+            border: Border(
+              left: BorderSide(
+                color: Color(0xFF7356E8),
+                width: 3.0,
+              ),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                height: kToolbarHeight,
+                child: Stack(
+                  alignment: Alignment.centerLeft,
+                  children: [
+                    Positioned(
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      child: Container(
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF7356E8),
+                            borderRadius: BorderRadius.only(
+                              bottomRight: Radius.circular(50),
+                            ),
+                          ),
+                          width: 50,
+                          height: 50,
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.only(right: 10.0, bottom: 10),
+                            child: IconButton(
+                              icon: Icon(Icons.close, color: Colors.white),
+                              onPressed: () => Navigator.of(context).pop(),
+                              splashRadius: 1,
+                              hoverColor: Colors.transparent,
+                              splashColor: Colors.transparent,
+                            ),
+                          )),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 15.0),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Text(
+                              'Chat History',
+                              style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 20,
+                                  fontFamily: 'Goldman'),
+                            ),
+                            Container(
+                              margin: EdgeInsets.fromLTRB(50, 0, 30, 0),
+                              child: Divider(
+                                  thickness: 1, color: Color(0xFF878787)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: messages.length,
+                  
+                  itemBuilder: (context, index) {
+                    if (messages[index]['sender'] == 'user') {
+                      return MessageListItem(
+                        message: messages[index],
+                        isFavorite: messages[index]['favorite'] ??
+                            false, 
+                      
+                      );
+                    } else {
+                      return SizedBox
+                          .shrink();
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class MessageListItem extends StatefulWidget {
+  final Map<String, dynamic> message;
+  final bool isFavorite;
+
+  const MessageListItem(
+      {required this.message,
+      required this.isFavorite,
+      Key? key})
+      : super(key: key);
+
+  @override
+  _MessageListItemState createState() => _MessageListItemState();
+}
+
+class _MessageListItemState extends State<MessageListItem> {
+  late bool isFavorite;
+
+  @override
+  void initState() {
+    super.initState();
+    isFavorite = widget.isFavorite;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: GestureDetector(
+        onTap: () {
+          setState(() {
+            isFavorite = !isFavorite;
+          });
+        },
+        child: Icon(
+          isFavorite ? Icons.favorite : Icons.favorite_border,
+          color: isFavorite ? Colors.red : Colors.grey,
+        ),
+      ),
+      title: Text(widget.message['text']),
+      // onTap function if required
     );
   }
 }
