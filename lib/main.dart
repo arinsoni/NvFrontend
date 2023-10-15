@@ -40,6 +40,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String audioUrl = "";
   bool isLoading = false;
   bool isFirstMessageSent = false;
+  late Color qColor = Colors.transparent;
+  late Color mColor = Colors.transparent;
 
   Future<void> deleteAllAudioFiles() async {
     final response = await http.delete(
@@ -181,6 +183,20 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _isQuestion() {
+    setState(() {
+       qColor = Color(0xFFDFDFF4);
+       mColor = Colors.transparent;
+    });
+  }
+
+  void _isMotivation() {
+     setState(() {
+       mColor = Color(0xFFDFDFF4);
+       qColor = Colors.transparent;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
@@ -188,8 +204,6 @@ class _HomeScreenState extends State<HomeScreen> {
     String desc =
         "some response text here yes, count that as an answer. some response text here yes, count that as an answer. some response text here yes, ";
     final GlobalKey imageKey = GlobalKey();
-   
-
 
     return Scaffold(
       appBar: AppBar(
@@ -365,7 +379,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   IntrinsicWidth(
                     child: Container(
-                 
                       decoration: BoxDecoration(
                         border: Border.all(
                           color: Color(0xFFDFDFF4),
@@ -381,17 +394,32 @@ class _HomeScreenState extends State<HomeScreen> {
                             Container(
                               margin: EdgeInsets.symmetric(horizontal: 10.0),
                               child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Color(0xFFDFDFF4),
-                                    maximumSize: Size(200, 40), 
-                                    minimumSize: Size(10, 40)
+                                style: ButtonStyle(
+                                  backgroundColor:
+                                      MaterialStateProperty.all(qColor),
+                                  elevation: MaterialStateProperty.all(0),
+                                  overlayColor:
+                                      MaterialStateProperty.resolveWith<Color?>(
+                                          (Set<MaterialState> states) {
+                                    if (states.contains(MaterialState.pressed))
+                                      return Colors.transparent;
+                                    return null;
+                                  }),
+                                  minimumSize:
+                                      MaterialStateProperty.all(Size(10, 40)),
+                                  maximumSize:
+                                      MaterialStateProperty.all(Size(200, 40)),
                                 ),
-                                onPressed: () {},
-                                child:  Text(
+                                onPressed: () {
+                                  _isQuestion();
+                                },
+                                child: Text(
                                   'Questions',
                                   style: TextStyle(
                                       color: Color(0xFF4E4E4E),
-                                      fontSize: (0.045 * screenWidth).clamp(12, 24).toDouble(),
+                                      fontSize: (0.045 * screenWidth)
+                                          .clamp(12, 24)
+                                          .toDouble(),
                                       fontFamily: 'Montserrat',
                                       fontWeight: FontWeight.w600),
                                 ),
@@ -400,17 +428,32 @@ class _HomeScreenState extends State<HomeScreen> {
                             Container(
                               margin: EdgeInsets.symmetric(horizontal: 10.0),
                               child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Color(0xFFDFDFF4),
-                                    maximumSize: Size(200, 40), 
-                                    minimumSize: Size(10, 40)
+                                style:ButtonStyle(
+                                  backgroundColor:
+                                      MaterialStateProperty.all(mColor),
+                                  elevation: MaterialStateProperty.all(0),
+                                  overlayColor:
+                                      MaterialStateProperty.resolveWith<Color?>(
+                                          (Set<MaterialState> states) {
+                                    if (states.contains(MaterialState.pressed))
+                                      return Colors.transparent;
+                                    return null;
+                                  }),
+                                  minimumSize:
+                                      MaterialStateProperty.all(Size(10, 40)),
+                                  maximumSize:
+                                      MaterialStateProperty.all(Size(200, 40)),
                                 ),
-                                onPressed: () {},
-                                child:  Text(
+                                onPressed: () {
+                                  _isMotivation();
+                                },
+                                child: Text(
                                   'Motivation',
                                   style: TextStyle(
                                       color: Color(0xFF4E4E4E),
-                                      fontSize: (0.045 * screenWidth).clamp(12, 24).toDouble(),
+                                      fontSize: (0.045 * screenWidth)
+                                          .clamp(12, 24)
+                                          .toDouble(),
                                       fontFamily: 'Montserrat',
                                       fontWeight: FontWeight.bold),
                                 ),
