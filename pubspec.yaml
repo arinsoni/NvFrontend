@@ -76,6 +76,8 @@ flutter:
     - assets/svg/back.svg
     - assets/svg/bg.svg
     - assets/svg/PoweredBy.svg
+    - assets/svg/logo_bg.svg
+    - assets/svg/NV.AI.svg
     - assets/svg/edit.svg
     - /Users/arinsoni/NVsir_ai/App/nvsirai/assets/images/edit.png
     - assets/images/bg.jpg
@@ -89,7 +91,11 @@ flutter:
         - asset: assets/fonts/Goldman-Regular.ttf  
     - family: Montserrat
       fonts:
-        - asset: assets/fonts/Montserrat-Regular.ttf  
+        - asset: assets/fonts/Montserrat-Regular.ttf 
+        - asset: assets/fonts/Montserrat-SemiBold.ttf
+          weight: 600
+
+
 
   
 

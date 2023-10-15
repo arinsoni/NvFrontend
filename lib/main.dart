@@ -39,6 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String originalMessage = "";
   String audioUrl = "";
   bool isLoading = false;
+  bool isFirstMessageSent = false;
 
   Future<void> deleteAllAudioFiles() async {
     final response = await http.delete(
@@ -80,6 +81,11 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     String message = _messageController.text.trim();
+    if (!isFirstMessageSent) {
+      setState(() {
+        isFirstMessageSent = true;
+      });
+    }
 
     if (message.isNotEmpty) {
       setState(() {
@@ -117,7 +123,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
         if (apiResponse['audio_response'] != null) {
           audioUrl = apiResponse['audio_response'];
-
         }
 
         isLoading = false;
@@ -131,53 +136,54 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _refreshMessage(int index) async {
-  if (isLoading) {
-    return;
-  }
-
-  String message = messages[index + 1]['text'];
-
-  setState(() {
-    messages.removeAt(index);
-    isLoading = true;
-  });
-
-  Map<String, dynamic> apiResponse = await fetchResponseFromAPI(message);
-
-  setState(() {
-    messages.insert(0, {
-      'text': apiResponse['text_response'],
-      'sender': 'server',
-      'audio': apiResponse['audio_response']
-    });
-
-    if (apiResponse['audio_response'] != null) {
-      audioUrl = apiResponse['audio_response'];
+    if (isLoading) {
+      return;
     }
 
-    isLoading = false;
-  });
-}
-
-  void _clearHistory() async {
-  print('Clearing history');
-  try {
-    await deleteAllAudioFiles();
-    print('Files deleted successfully');
+    String message = messages[index + 1]['text'];
 
     setState(() {
-      messages.clear(); 
+      messages.removeAt(index);
+      isLoading = true;
     });
 
-    print('Messages cleared');
-  } catch (e) {
-    print('Error clearing history: $e');
-  }
-}
+    Map<String, dynamic> apiResponse = await fetchResponseFromAPI(message);
 
+    setState(() {
+      messages.insert(0, {
+        'text': apiResponse['text_response'],
+        'sender': 'server',
+        'audio': apiResponse['audio_response']
+      });
+
+      if (apiResponse['audio_response'] != null) {
+        audioUrl = apiResponse['audio_response'];
+      }
+
+      isLoading = false;
+    });
+  }
+
+  void _clearHistory() async {
+    print('Clearing history');
+    try {
+      await deleteAllAudioFiles();
+      print('Files deleted successfully');
+
+      setState(() {
+        messages.clear();
+        isFirstMessageSent = false;
+      });
+
+      print('Messages cleared');
+    } catch (e) {
+      print('Error clearing history: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    double screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -264,53 +270,152 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/bg.jpg'),
-            fit: BoxFit.fill,
-          ),
-        ),
-        child: Column(
-          children: <Widget>[
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ListView.builder(
-                  itemCount: messages.length + (isLoading ? 1 : 0),
-                  controller: _scrollController,
-                  reverse: true,
-                  itemBuilder: (context, index) {
-                    if (isLoading && index == 0) {
-                      return _buildLoadingIndicator();
-                    }
-
-                    int messageIndex = isLoading ? index - 1 : index;
-
-                    return MessageContainer(
-                      message: messages[messageIndex],
-                      onEdit: (String text) {
-                        setState(() {
-                          _messageController.text = text;
-                          originalMessage = text;
-                        });
-                      },
-                      isLoading: isLoading && index == 0,
-                      onRefresh: _refreshMessage,
-                      index: messageIndex,
-                    );
-                  },
-                ),
+      body: Stack(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/images/bg.jpg'),
+                fit: BoxFit.fill,
               ),
             ),
-            MessageInput(
-              messageController: _messageController,
-              sendMessage: mySendMessageFunction,
-              onAddIconPressed: () {},
-              isLoading: isLoading,
+            child: Column(
+              children: <Widget>[
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ListView.builder(
+                      itemCount: messages.length + (isLoading ? 1 : 0),
+                      controller: _scrollController,
+                      reverse: true,
+                      itemBuilder: (context, index) {
+                        if (isLoading && index == 0) {
+                          return _buildLoadingIndicator();
+                        }
+
+                        int messageIndex = isLoading ? index - 1 : index;
+
+                        return MessageContainer(
+                          message: messages[messageIndex],
+                          onEdit: (String text) {
+                            setState(() {
+                              _messageController.text = text;
+                              originalMessage = text;
+                            });
+                          },
+                          isLoading: isLoading && index == 0,
+                          onRefresh: _refreshMessage,
+                          index: messageIndex,
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                MessageInput(
+                  messageController: _messageController,
+                  sendMessage: mySendMessageFunction,
+                  onAddIconPressed: () {},
+                  isLoading: isLoading,
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          if (!isFirstMessageSent)
+            Padding(
+              padding: const EdgeInsets.only(top: 50.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Center(
+                        child: SvgPicture.asset(
+                          'assets/svg/logo_bg.svg',
+                          width: 0.7*screenWidth,
+                        ), 
+                      ),
+                      Center(
+                        child: SvgPicture.asset(
+                          'assets/svg/logo_bg.svg',
+                          width: 0.7*screenWidth,
+                        ), 
+                      ),
+                      Center(
+                        child: SvgPicture.asset(
+                          'assets/svg/NV.AI.svg',
+                          width: 0.4*screenWidth,
+                        ), 
+                      ),
+                    ],
+                  ),
+                  SizedBox(
+                    height: 20,
+                  ),
+                  IntrinsicWidth(
+                    child: Container(
+                      padding: EdgeInsets.only(
+                        top: 8,
+                        bottom: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Color(0xFFDFDFF4),
+                          width: 4.0,
+                        ),
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            margin: EdgeInsets.symmetric(horizontal: 10.0),
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Color(0xFFDFDFF4),
+                                 minimumSize: Size(0.3*screenWidth, 40), 
+                              ),
+
+                              onPressed: () {},
+                              child: const Text(
+                                'Questions',
+                                style: TextStyle(
+                                  color: Color(0xFF4E4E4E),
+                                  fontSize: 18,
+                                  fontFamily: 'Montserrat',
+                                  fontWeight: FontWeight.w600
+                                ),
+                              ),
+                            ),
+                          ),
+                          Container(
+                            margin: EdgeInsets.symmetric(horizontal: 10.0),
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Color(0xFFDFDFF4),
+                                 minimumSize: Size(0.3*screenWidth, 40), 
+                              ),
+
+                              onPressed: () {},
+                              child: const Text(
+                                'Motivation',
+                                style: TextStyle(
+                                  color: Color(0xFF4E4E4E),
+                                  fontSize: 18,
+                                  fontFamily: 'Montserrat',
+                                  fontWeight: FontWeight.bold
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
