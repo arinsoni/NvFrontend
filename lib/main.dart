@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:intl/intl.dart';
 import 'package:nvsirai/widgets/message_container.dart';
 import 'package:nvsirai/widgets/message_input.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -43,6 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
   late Color qColor = Colors.transparent;
   late Color mColor = Colors.transparent;
   bool isFavorite = false;
+  
 
   Future<void> deleteAllAudioFiles() async {
     final response = await http.delete(
@@ -91,8 +93,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     if (message.isNotEmpty) {
+      DateTime now = DateTime.now();
       setState(() {
         audioUrl = '';
+        
 
         if (originalMessage.isNotEmpty) {
           int index = messages.indexWhere(
@@ -111,6 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
             'text': message,
             'sender': 'user',
             'favorite': false,
+            'timestamp': now
           });
         }
 
@@ -121,11 +126,13 @@ class _HomeScreenState extends State<HomeScreen> {
       await Future.delayed(Duration(seconds: 2));
 
       Map<String, dynamic> apiResponse = await fetchResponseFromAPI(message);
+      now = DateTime.now(); 
       setState(() {
         messages.insert(0, {
           'text': apiResponse['text_response'],
           'sender': 'server',
-          'audio': apiResponse['audio_response']
+          'audio': apiResponse['audio_response'],
+          'timestamp' : now
         });
 
         if (apiResponse['audio_response'] != null) {
@@ -507,6 +514,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHistoryDrawer() {
+    List<Map<String, dynamic>> userMessages = messages
+    .where((message) => message['sender'] == 'user')
+    .toList();
+
     return Drawer(
       child: AbsorbPointer(
         absorbing: false,
@@ -532,25 +543,26 @@ class _HomeScreenState extends State<HomeScreen> {
                       top: 0,
                       bottom: 0,
                       child: Container(
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF7356E8),
-                            borderRadius: BorderRadius.only(
-                              bottomRight: Radius.circular(50),
-                            ),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF7356E8),
+                          borderRadius: BorderRadius.only(
+                            bottomRight: Radius.circular(50),
                           ),
-                          width: 50,
-                          height: 50,
-                          child: Padding(
-                            padding:
-                                const EdgeInsets.only(right: 10.0, bottom: 10),
-                            child: IconButton(
-                              icon: Icon(Icons.close, color: Colors.white),
-                              onPressed: () => Navigator.of(context).pop(),
-                              splashRadius: 1,
-                              hoverColor: Colors.transparent,
-                              splashColor: Colors.transparent,
-                            ),
-                          )),
+                        ),
+                        width: 50,
+                        height: 50,
+                        child: Padding(
+                          padding:
+                              const EdgeInsets.only(right: 10.0, bottom: 10),
+                          child: IconButton(
+                            icon: Icon(Icons.close, color: Colors.white),
+                            onPressed: () => Navigator.of(context).pop(),
+                            splashRadius: 1,
+                            hoverColor: Colors.transparent,
+                            splashColor: Colors.transparent,
+                          ),
+                        ),
+                      ),
                     ),
                     Padding(
                       padding: const EdgeInsets.only(top: 15.0),
@@ -560,14 +572,17 @@ class _HomeScreenState extends State<HomeScreen> {
                             Text(
                               'Chat History',
                               style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 20,
-                                  fontFamily: 'Goldman'),
+                                color: Colors.black,
+                                fontSize: 20,
+                                fontFamily: 'Goldman',
+                              ),
                             ),
                             Container(
                               margin: EdgeInsets.fromLTRB(50, 0, 30, 0),
                               child: Divider(
-                                  thickness: 1, color: Color(0xFF878787)),
+                                thickness: 1,
+                                color: Color(0xFF878787),
+                              ),
                             ),
                           ],
                         ),
@@ -577,24 +592,58 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               Expanded(
-                child: ListView.builder(
-                  itemCount: messages.length,
-                  
-                  itemBuilder: (context, index) {
-                    if (messages[index]['sender'] == 'user') {
-                      return MessageListItem(
-                        message: messages[index],
-                        isFavorite: messages[index]['favorite'] ??
-                            false, 
-                      
-                      );
-                    } else {
-                      return SizedBox
-                          .shrink();
-                    }
-                  },
+  child: ListView.builder(
+    
+    itemCount: userMessages.length,
+    itemBuilder: (context, index) {
+      
+
+      DateTime messageTime = userMessages[index]['timestamp'];
+
+      print("messages: ${messageTime.day}");
+
+      DateTime currentDate = DateTime.now();
+
+      bool isToday = messageTime.day == currentDate.day &&
+          messageTime.month == currentDate.month &&
+          messageTime.year == currentDate.year;
+
+      String timestampHeading = isToday
+          ? 'Today'
+          : DateFormat('MMMM yyyy').format(messageTime);
+
+      if (index == 0 ||
+          messageTime.day != userMessages[index - 1]['timestamp'].day ||
+          messageTime.month != userMessages[index - 1]['timestamp'].month) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16.0, 8.0, 0, 8.0),
+              child: Text(
+                timestampHeading,
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 16,
                 ),
               ),
+            ),
+            MessageListItem(
+              message: userMessages[index],
+              isFavorite: userMessages[index]['favorite'] ?? false,
+            ),
+          ],
+        );
+      } else {
+        return MessageListItem(
+          message: userMessages[index],
+          isFavorite: userMessages[index]['favorite'] ?? false,
+        );
+      }
+    },
+  ),
+)
+
             ],
           ),
         ),
@@ -608,9 +657,7 @@ class MessageListItem extends StatefulWidget {
   final bool isFavorite;
 
   const MessageListItem(
-      {required this.message,
-      required this.isFavorite,
-      Key? key})
+      {required this.message, required this.isFavorite, Key? key})
       : super(key: key);
 
   @override
