@@ -44,7 +44,6 @@ class _HomeScreenState extends State<HomeScreen> {
   late Color qColor = Colors.transparent;
   late Color mColor = Colors.transparent;
   bool isFavorite = false;
-  
 
   Future<void> deleteAllAudioFiles() async {
     final response = await http.delete(
@@ -96,7 +95,6 @@ class _HomeScreenState extends State<HomeScreen> {
       DateTime now = DateTime.now();
       setState(() {
         audioUrl = '';
-        
 
         if (originalMessage.isNotEmpty) {
           int index = messages.indexWhere(
@@ -126,13 +124,13 @@ class _HomeScreenState extends State<HomeScreen> {
       await Future.delayed(Duration(seconds: 2));
 
       Map<String, dynamic> apiResponse = await fetchResponseFromAPI(message);
-      now = DateTime.now(); 
+      now = DateTime.now();
       setState(() {
         messages.insert(0, {
           'text': apiResponse['text_response'],
           'sender': 'server',
           'audio': apiResponse['audio_response'],
-          'timestamp' : now
+          'timestamp': now
         });
 
         if (apiResponse['audio_response'] != null) {
@@ -219,7 +217,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
     return Scaffold(
-      key: _scaffoldKey,
+      // key: _scaffoldKey,
       endDrawer: _buildHistoryDrawer(),
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -305,6 +303,151 @@ class _HomeScreenState extends State<HomeScreen> {
                 fit: BoxFit.fill,
               ),
             ),
+          ),
+          
+          if (!isFirstMessageSent)
+            SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 50.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Center(
+                          child: SvgPicture.asset(
+                            'assets/svg/logo_bg.svg',
+                            width: 0.7 * screenWidth,
+                            height: 0.4 * screenHeight,
+                            key: imageKey,
+                          ),
+                        ),
+                        Center(
+                          child: SvgPicture.asset(
+                            'assets/svg/logo_bg.svg',
+                            width: 0.7 * screenWidth,
+                            height: 0.4 * screenHeight,
+                          ),
+                        ),
+                        Center(
+                          child: SvgPicture.asset(
+                            'assets/svg/NV.AI.svg',
+                            width: 0.4 * screenWidth,
+                            height: 0.06 * screenHeight,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(
+                      height: 20,
+                    ),
+                    IntrinsicWidth(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: Color(0xFFDFDFF4),
+                            width: 4.0,
+                          ),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                margin: EdgeInsets.symmetric(horizontal: 10.0),
+                                child: ElevatedButton(
+                                  style: ButtonStyle(
+                                    backgroundColor:
+                                        MaterialStateProperty.all(qColor),
+                                    elevation: MaterialStateProperty.all(0),
+                                    overlayColor:
+                                        MaterialStateProperty.resolveWith<Color?>(
+                                            (Set<MaterialState> states) {
+                                      if (states.contains(MaterialState.pressed))
+                                        return Colors.transparent;
+                                      return null;
+                                    }),
+                                    minimumSize:
+                                        MaterialStateProperty.all(Size(10, 40)),
+                                    maximumSize:
+                                        MaterialStateProperty.all(Size(200, 40)),
+                                  ),
+                                  onPressed: () {
+                                    _isQuestion();
+                                  },
+                                  child: Text(
+                                    'Questions',
+                                    style: TextStyle(
+                                        color: Color(0xFF4E4E4E),
+                                        fontSize: (0.045 * screenWidth)
+                                            .clamp(12, 24)
+                                            .toDouble(),
+                                        fontFamily: 'Montserrat',
+                                        fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                margin: EdgeInsets.symmetric(horizontal: 10.0),
+                                child: ElevatedButton(
+                                  style: ButtonStyle(
+                                    backgroundColor:
+                                        MaterialStateProperty.all(mColor),
+                                    elevation: MaterialStateProperty.all(0),
+                                    overlayColor:
+                                        MaterialStateProperty.resolveWith<Color?>(
+                                            (Set<MaterialState> states) {
+                                      if (states.contains(MaterialState.pressed))
+                                        return Colors.transparent;
+                                      return null;
+                                    }),
+                                    minimumSize:
+                                        MaterialStateProperty.all(Size(10, 40)),
+                                    maximumSize:
+                                        MaterialStateProperty.all(Size(200, 40)),
+                                  ),
+                                  onPressed: () {
+                                    _isMotivation();
+                                  },
+                                  child: Text(
+                                    'Motivation',
+                                    style: TextStyle(
+                                        color: Color(0xFF4E4E4E),
+                                        fontSize: (0.045 * screenWidth)
+                                            .clamp(12, 24)
+                                            .toDouble(),
+                                        fontFamily: 'Montserrat',
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(
+                          right: screenWidth * 0.1,
+                          top: 10,
+                          left: 0.1 * screenWidth),
+                      child: Text(
+                        desc,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Color(0xFF878787),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Container(
+            
             child: Column(
               children: <Widget>[
                 Expanded(
@@ -318,9 +461,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         if (isLoading && index == 0) {
                           return _buildLoadingIndicator();
                         }
-
+      
                         int messageIndex = isLoading ? index - 1 : index;
-
+      
                         return MessageContainer(
                           message: messages[messageIndex],
                           onEdit: (String text) {
@@ -337,6 +480,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
+          
                 MessageInput(
                   messageController: _messageController,
                   sendMessage: mySendMessageFunction,
@@ -346,145 +490,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          if (!isFirstMessageSent)
-            Padding(
-              padding: const EdgeInsets.only(top: 50.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Center(
-                        child: SvgPicture.asset(
-                          'assets/svg/logo_bg.svg',
-                          width: 0.7 * screenWidth,
-                          height: 0.4 * screenHeight,
-                          key: imageKey,
-                        ),
-                      ),
-                      Center(
-                        child: SvgPicture.asset(
-                          'assets/svg/logo_bg.svg',
-                          width: 0.7 * screenWidth,
-                          height: 0.4 * screenHeight,
-                        ),
-                      ),
-                      Center(
-                        child: SvgPicture.asset(
-                          'assets/svg/NV.AI.svg',
-                          width: 0.4 * screenWidth,
-                          height: 0.06 * screenHeight,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: 20,
-                  ),
-                  IntrinsicWidth(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: Color(0xFFDFDFF4),
-                          width: 4.0,
-                        ),
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              margin: EdgeInsets.symmetric(horizontal: 10.0),
-                              child: ElevatedButton(
-                                style: ButtonStyle(
-                                  backgroundColor:
-                                      MaterialStateProperty.all(qColor),
-                                  elevation: MaterialStateProperty.all(0),
-                                  overlayColor:
-                                      MaterialStateProperty.resolveWith<Color?>(
-                                          (Set<MaterialState> states) {
-                                    if (states.contains(MaterialState.pressed))
-                                      return Colors.transparent;
-                                    return null;
-                                  }),
-                                  minimumSize:
-                                      MaterialStateProperty.all(Size(10, 40)),
-                                  maximumSize:
-                                      MaterialStateProperty.all(Size(200, 40)),
-                                ),
-                                onPressed: () {
-                                  _isQuestion();
-                                },
-                                child: Text(
-                                  'Questions',
-                                  style: TextStyle(
-                                      color: Color(0xFF4E4E4E),
-                                      fontSize: (0.045 * screenWidth)
-                                          .clamp(12, 24)
-                                          .toDouble(),
-                                      fontFamily: 'Montserrat',
-                                      fontWeight: FontWeight.w600),
-                                ),
-                              ),
-                            ),
-                            Container(
-                              margin: EdgeInsets.symmetric(horizontal: 10.0),
-                              child: ElevatedButton(
-                                style: ButtonStyle(
-                                  backgroundColor:
-                                      MaterialStateProperty.all(mColor),
-                                  elevation: MaterialStateProperty.all(0),
-                                  overlayColor:
-                                      MaterialStateProperty.resolveWith<Color?>(
-                                          (Set<MaterialState> states) {
-                                    if (states.contains(MaterialState.pressed))
-                                      return Colors.transparent;
-                                    return null;
-                                  }),
-                                  minimumSize:
-                                      MaterialStateProperty.all(Size(10, 40)),
-                                  maximumSize:
-                                      MaterialStateProperty.all(Size(200, 40)),
-                                ),
-                                onPressed: () {
-                                  _isMotivation();
-                                },
-                                child: Text(
-                                  'Motivation',
-                                  style: TextStyle(
-                                      color: Color(0xFF4E4E4E),
-                                      fontSize: (0.045 * screenWidth)
-                                          .clamp(12, 24)
-                                          .toDouble(),
-                                      fontFamily: 'Montserrat',
-                                      fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.only(
-                        right: screenWidth * 0.1,
-                        top: 10,
-                        left: 0.1 * screenWidth),
-                    child: Text(
-                      desc,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Color(0xFF878787),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
         ],
       ),
     );
@@ -514,9 +519,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHistoryDrawer() {
-    List<Map<String, dynamic>> userMessages = messages
-    .where((message) => message['sender'] == 'user')
-    .toList();
+    List<Map<String, dynamic>> userMessages =
+        messages.where((message) => message['sender'] == 'user').toList();
 
     return Drawer(
       child: AbsorbPointer(
@@ -592,58 +596,58 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               Expanded(
-  child: ListView.builder(
-    
-    itemCount: userMessages.length,
-    itemBuilder: (context, index) {
-      
+                child: ListView.builder(
+                  itemCount: userMessages.length,
+                  itemBuilder: (context, index) {
+                    DateTime messageTime = userMessages[index]['timestamp'];
 
-      DateTime messageTime = userMessages[index]['timestamp'];
+                    print("messages: ${messageTime.day}");
 
-      print("messages: ${messageTime.day}");
+                    DateTime currentDate = DateTime.now();
 
-      DateTime currentDate = DateTime.now();
+                    bool isToday = messageTime.day == currentDate.day &&
+                        messageTime.month == currentDate.month &&
+                        messageTime.year == currentDate.year;
 
-      bool isToday = messageTime.day == currentDate.day &&
-          messageTime.month == currentDate.month &&
-          messageTime.year == currentDate.year;
+                    String timestampHeading = isToday
+                        ? 'Today'
+                        : DateFormat('MMMM yyyy').format(messageTime);
 
-      String timestampHeading = isToday
-          ? 'Today'
-          : DateFormat('MMMM yyyy').format(messageTime);
-
-      if (index == 0 ||
-          messageTime.day != userMessages[index - 1]['timestamp'].day ||
-          messageTime.month != userMessages[index - 1]['timestamp'].month) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16.0, 8.0, 0, 8.0),
-              child: Text(
-                timestampHeading,
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 16,
+                    if (index == 0 ||
+                        messageTime.day !=
+                            userMessages[index - 1]['timestamp'].day ||
+                        messageTime.month !=
+                            userMessages[index - 1]['timestamp'].month) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding:
+                                const EdgeInsets.fromLTRB(16.0, 8.0, 0, 8.0),
+                            child: Text(
+                              timestampHeading,
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                          MessageListItem(
+                            message: userMessages[index],
+                            isFavorite:
+                                userMessages[index]['favorite'] ?? false,
+                          ),
+                        ],
+                      );
+                    } else {
+                      return MessageListItem(
+                        message: userMessages[index],
+                        isFavorite: userMessages[index]['favorite'] ?? false,
+                      );
+                    }
+                  },
                 ),
-              ),
-            ),
-            MessageListItem(
-              message: userMessages[index],
-              isFavorite: userMessages[index]['favorite'] ?? false,
-            ),
-          ],
-        );
-      } else {
-        return MessageListItem(
-          message: userMessages[index],
-          isFavorite: userMessages[index]['favorite'] ?? false,
-        );
-      }
-    },
-  ),
-)
-
+              )
             ],
           ),
         ),
