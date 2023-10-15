@@ -184,7 +184,13 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
-    String desc = "some response text here yes, count that as an answer. some response text here yes, count that as an answer. some response text here yes, ";
+    double screenHeight = MediaQuery.of(context).size.height;
+    String desc =
+        "some response text here yes, count that as an answer. some response text here yes, count that as an answer. some response text here yes, ";
+    final GlobalKey imageKey = GlobalKey();
+   
+
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -333,20 +339,24 @@ class _HomeScreenState extends State<HomeScreen> {
                       Center(
                         child: SvgPicture.asset(
                           'assets/svg/logo_bg.svg',
-                          width: 0.7*screenWidth,
-                        ), 
+                          width: 0.7 * screenWidth,
+                          height: 0.4 * screenHeight,
+                          key: imageKey,
+                        ),
                       ),
                       Center(
                         child: SvgPicture.asset(
                           'assets/svg/logo_bg.svg',
-                          width: 0.7*screenWidth,
-                        ), 
+                          width: 0.7 * screenWidth,
+                          height: 0.4 * screenHeight,
+                        ),
                       ),
                       Center(
                         child: SvgPicture.asset(
                           'assets/svg/NV.AI.svg',
-                          width: 0.4*screenWidth,
-                        ), 
+                          width: 0.4 * screenWidth,
+                          height: 0.06 * screenHeight,
+                        ),
                       ),
                     ],
                   ),
@@ -355,10 +365,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   IntrinsicWidth(
                     child: Container(
-                      padding: EdgeInsets.only(
-                        top: 8,
-                        bottom: 8,
-                      ),
+                 
                       decoration: BoxDecoration(
                         border: Border.all(
                           color: Color(0xFFDFDFF4),
@@ -366,66 +373,67 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         borderRadius: BorderRadius.circular(15),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            margin: EdgeInsets.symmetric(horizontal: 10.0),
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFFDFDFF4),
-                                 minimumSize: Size(0.3*screenWidth, 40), 
-                              ),
-
-                              onPressed: () {},
-                              child: const Text(
-                                'Questions',
-                                style: TextStyle(
-                                  color: Color(0xFF4E4E4E),
-                                  fontSize: 18,
-                                  fontFamily: 'Montserrat',
-                                  fontWeight: FontWeight.w600
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              margin: EdgeInsets.symmetric(horizontal: 10.0),
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Color(0xFFDFDFF4),
+                                    maximumSize: Size(200, 40), 
+                                    minimumSize: Size(10, 40)
+                                ),
+                                onPressed: () {},
+                                child:  Text(
+                                  'Questions',
+                                  style: TextStyle(
+                                      color: Color(0xFF4E4E4E),
+                                      fontSize: (0.045 * screenWidth).clamp(12, 24).toDouble(),
+                                      fontFamily: 'Montserrat',
+                                      fontWeight: FontWeight.w600),
                                 ),
                               ),
                             ),
-                          ),
-                          Container(
-                            margin: EdgeInsets.symmetric(horizontal: 10.0),
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFFDFDFF4),
-                                 minimumSize: Size(0.3*screenWidth, 40), 
-                              ),
-
-                              onPressed: () {},
-                              child: const Text(
-                                'Motivation',
-                                style: TextStyle(
-                                  color: Color(0xFF4E4E4E),
-                                  fontSize: 18,
-                                  fontFamily: 'Montserrat',
-                                  fontWeight: FontWeight.bold
+                            Container(
+                              margin: EdgeInsets.symmetric(horizontal: 10.0),
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Color(0xFFDFDFF4),
+                                    maximumSize: Size(200, 40), 
+                                    minimumSize: Size(10, 40)
+                                ),
+                                onPressed: () {},
+                                child:  Text(
+                                  'Motivation',
+                                  style: TextStyle(
+                                      color: Color(0xFF4E4E4E),
+                                      fontSize: (0.045 * screenWidth).clamp(12, 24).toDouble(),
+                                      fontFamily: 'Montserrat',
+                                      fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                      
                     ),
                   ),
                   Padding(
-                    padding:  EdgeInsets.only(right: screenWidth*0.1, top: 10, left:  0.1*screenWidth),
+                    padding: EdgeInsets.only(
+                        right: screenWidth * 0.1,
+                        top: 10,
+                        left: 0.1 * screenWidth),
                     child: Text(
                       desc,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: Color(0xFF878787),
-                  
                       ),
                     ),
                   ),
-
                 ],
               ),
             ),

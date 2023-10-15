@@ -79,7 +79,8 @@ flutter:
     - assets/svg/logo_bg.svg
     - assets/svg/NV.AI.svg
     - assets/svg/edit.svg
-    - /Users/arinsoni/NVsir_ai/App/nvsirai/assets/images/edit.png
+    - assets/images/tagline.png
+    - assets/images/edit.png
     - assets/images/bg.jpg
     - assets/images/tagline.png
 
