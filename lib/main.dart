@@ -184,6 +184,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
+    String desc = "some response text here yes, count that as an answer. some response text here yes, count that as an answer. some response text here yes, ";
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -410,8 +411,21 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ],
                       ),
+                      
                     ),
-                  )
+                  ),
+                  Padding(
+                    padding:  EdgeInsets.only(right: screenWidth*0.1, top: 10, left:  0.1*screenWidth),
+                    child: Text(
+                      desc,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Color(0xFF878787),
+                  
+                      ),
+                    ),
+                  ),
+
                 ],
               ),
             ),
