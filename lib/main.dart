@@ -219,6 +219,9 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       // key: _scaffoldKey,
       endDrawer: _buildHistoryDrawer(),
+      endDrawerEnableOpenDragGesture: true,
+      
+      drawerEnableOpenDragGesture: false,
       appBar: AppBar(
         backgroundColor: Colors.white,
         leading: IconButton(
@@ -275,21 +278,24 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
+       
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: IconButton(
-              icon: SvgPicture.asset(
-                'assets/svg/history.svg',
-                width: 20.0,
-                height: 20.0,
-                colorFilter: const ColorFilter.mode(
-                  Color(0xFF4E4E4E),
-                  BlendMode.srcIn,
-                ),
-                semanticsLabel: 'A red up arrow',
-              ),
-              onPressed: () => _scaffoldKey.currentState!.openEndDrawer(),
+          Builder(
+            builder: (context) => 
+                Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: IconButton(
+                  icon: SvgPicture.asset(
+                    'assets/svg/history.svg',
+                    width: 20.0,
+                    height: 20.0,
+                    colorFilter: const ColorFilter.mode(
+                      Color(0xFF4E4E4E),
+                      BlendMode.srcIn,
+                    ),
+                    semanticsLabel: 'A red up arrow',
+                  ),
+                  onPressed: () => Scaffold.of(context).openEndDrawer()),
             ),
           ),
         ],
@@ -304,7 +310,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          
           if (!isFirstMessageSent)
             SingleChildScrollView(
               child: Padding(
@@ -363,17 +368,18 @@ class _HomeScreenState extends State<HomeScreen> {
                                     backgroundColor:
                                         MaterialStateProperty.all(qColor),
                                     elevation: MaterialStateProperty.all(0),
-                                    overlayColor:
-                                        MaterialStateProperty.resolveWith<Color?>(
+                                    overlayColor: MaterialStateProperty
+                                        .resolveWith<Color?>(
                                             (Set<MaterialState> states) {
-                                      if (states.contains(MaterialState.pressed))
+                                      if (states
+                                          .contains(MaterialState.pressed))
                                         return Colors.transparent;
                                       return null;
                                     }),
                                     minimumSize:
                                         MaterialStateProperty.all(Size(10, 40)),
-                                    maximumSize:
-                                        MaterialStateProperty.all(Size(200, 40)),
+                                    maximumSize: MaterialStateProperty.all(
+                                        Size(200, 40)),
                                   ),
                                   onPressed: () {
                                     _isQuestion();
@@ -397,17 +403,18 @@ class _HomeScreenState extends State<HomeScreen> {
                                     backgroundColor:
                                         MaterialStateProperty.all(mColor),
                                     elevation: MaterialStateProperty.all(0),
-                                    overlayColor:
-                                        MaterialStateProperty.resolveWith<Color?>(
+                                    overlayColor: MaterialStateProperty
+                                        .resolveWith<Color?>(
                                             (Set<MaterialState> states) {
-                                      if (states.contains(MaterialState.pressed))
+                                      if (states
+                                          .contains(MaterialState.pressed))
                                         return Colors.transparent;
                                       return null;
                                     }),
                                     minimumSize:
                                         MaterialStateProperty.all(Size(10, 40)),
-                                    maximumSize:
-                                        MaterialStateProperty.all(Size(200, 40)),
+                                    maximumSize: MaterialStateProperty.all(
+                                        Size(200, 40)),
                                   ),
                                   onPressed: () {
                                     _isMotivation();
@@ -446,8 +453,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-            Container(
-            
+          Container(
             child: Column(
               children: <Widget>[
                 Expanded(
@@ -461,9 +467,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         if (isLoading && index == 0) {
                           return _buildLoadingIndicator();
                         }
-      
+
                         int messageIndex = isLoading ? index - 1 : index;
-      
+
                         return MessageContainer(
                           message: messages[messageIndex],
                           onEdit: (String text) {
@@ -480,7 +486,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-          
                 MessageInput(
                   messageController: _messageController,
                   sendMessage: mySendMessageFunction,
@@ -522,133 +527,140 @@ class _HomeScreenState extends State<HomeScreen> {
     List<Map<String, dynamic>> userMessages =
         messages.where((message) => message['sender'] == 'user').toList();
 
-    return Drawer(
-      child: AbsorbPointer(
-        absorbing: false,
-        child: Container(
-          decoration: const BoxDecoration(
-            border: Border(
-              left: BorderSide(
-                color: Color(0xFF7356E8),
-                width: 3.0,
+    return Container(
+      margin: EdgeInsets.fromLTRB(0, MediaQuery.of(context).padding.top,  0, 0),
+      child: Drawer(
+        
+        child: AbsorbPointer(
+          absorbing: false,
+          child: Container(
+            
+            decoration: const BoxDecoration(
+              border: Border(
+                left: BorderSide(
+                  color: Color(0xFF7356E8),
+                  width: 3.0,
+                ),
               ),
             ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                height: kToolbarHeight,
-                child: Stack(
-                  alignment: Alignment.centerLeft,
-                  children: [
-                    Positioned(
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      child: Container(
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF7356E8),
-                          borderRadius: BorderRadius.only(
-                            bottomRight: Radius.circular(50),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                 
+                Container(
+                  
+                 
+                  child: Stack(
+                    alignment: Alignment.centerLeft,
+                    children: [
+                      Positioned(
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF7356E8),
+                            borderRadius: BorderRadius.only(
+                              bottomRight: Radius.circular(50),
+                            ),
                           ),
-                        ),
-                        width: 50,
-                        height: 50,
-                        child: Padding(
-                          padding:
-                              const EdgeInsets.only(right: 10.0, bottom: 10),
-                          child: IconButton(
-                            icon: Icon(Icons.close, color: Colors.white),
-                            onPressed: () => Navigator.of(context).pop(),
-                            splashRadius: 1,
-                            hoverColor: Colors.transparent,
-                            splashColor: Colors.transparent,
+                          width: 50,
+                          height: 50,
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.only(right: 10.0, bottom: 10),
+                            child: IconButton(
+                              icon: Icon(Icons.close, color: Colors.white),
+                              onPressed: () => Navigator.of(context).pop(),
+                              splashRadius: 1,
+                              hoverColor: Colors.transparent,
+                              splashColor: Colors.transparent,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 15.0),
-                      child: Center(
-                        child: Column(
+                      Padding(
+                        padding: const EdgeInsets.only(top: 15.0),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              Text(
+                                'Chat History',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 20,
+                                  fontFamily: 'Goldman',
+                                ),
+                              ),
+                              Container(
+                                margin: EdgeInsets.fromLTRB(50, 0, 30, 0),
+                                child: Divider(
+                                  thickness: 1,
+                                  color: Color(0xFF878787),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: userMessages.length,
+                    itemBuilder: (context, index) {
+                      DateTime messageTime = userMessages[index]['timestamp'];
+    
+                      print("messages: ${messageTime.day}");
+    
+                      DateTime currentDate = DateTime.now();
+    
+                      bool isToday = messageTime.day == currentDate.day &&
+                          messageTime.month == currentDate.month &&
+                          messageTime.year == currentDate.year;
+    
+                      String timestampHeading = isToday
+                          ? 'Today'
+                          : DateFormat('MMMM yyyy').format(messageTime);
+    
+                      if (index == 0 ||
+                          messageTime.day !=
+                              userMessages[index - 1]['timestamp'].day ||
+                          messageTime.month !=
+                              userMessages[index - 1]['timestamp'].month) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Chat History',
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontSize: 20,
-                                fontFamily: 'Goldman',
+                            Padding(
+                              padding:
+                                  const EdgeInsets.fromLTRB(16.0, 8.0, 0, 8.0),
+                              child: Text(
+                                timestampHeading,
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 16,
+                                ),
                               ),
                             ),
-                            Container(
-                              margin: EdgeInsets.fromLTRB(50, 0, 30, 0),
-                              child: Divider(
-                                thickness: 1,
-                                color: Color(0xFF878787),
-                              ),
+                            MessageListItem(
+                              message: userMessages[index],
+                              isFavorite:
+                                  userMessages[index]['favorite'] ?? false,
                             ),
                           ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: userMessages.length,
-                  itemBuilder: (context, index) {
-                    DateTime messageTime = userMessages[index]['timestamp'];
-
-                    print("messages: ${messageTime.day}");
-
-                    DateTime currentDate = DateTime.now();
-
-                    bool isToday = messageTime.day == currentDate.day &&
-                        messageTime.month == currentDate.month &&
-                        messageTime.year == currentDate.year;
-
-                    String timestampHeading = isToday
-                        ? 'Today'
-                        : DateFormat('MMMM yyyy').format(messageTime);
-
-                    if (index == 0 ||
-                        messageTime.day !=
-                            userMessages[index - 1]['timestamp'].day ||
-                        messageTime.month !=
-                            userMessages[index - 1]['timestamp'].month) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding:
-                                const EdgeInsets.fromLTRB(16.0, 8.0, 0, 8.0),
-                            child: Text(
-                              timestampHeading,
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ),
-                          MessageListItem(
-                            message: userMessages[index],
-                            isFavorite:
-                                userMessages[index]['favorite'] ?? false,
-                          ),
-                        ],
-                      );
-                    } else {
-                      return MessageListItem(
-                        message: userMessages[index],
-                        isFavorite: userMessages[index]['favorite'] ?? false,
-                      );
-                    }
-                  },
-                ),
-              )
-            ],
+                        );
+                      } else {
+                        return MessageListItem(
+                          message: userMessages[index],
+                          isFavorite: userMessages[index]['favorite'] ?? false,
+                        );
+                      }
+                    },
+                  ),
+                )
+              ],
+            ),
           ),
         ),
       ),
