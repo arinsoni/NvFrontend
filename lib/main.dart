@@ -191,7 +191,7 @@ class _HomeScreenState extends State<HomeScreen> {
         leading: IconButton(
           icon: const Icon(
             Icons.chevron_left_rounded,
-            color: Colors.grey,
+            color: Color(0xFF4E4E4E),
             size: 40,
           ),
           onPressed: () {},
@@ -201,8 +201,8 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             SvgPicture.asset(
               'assets/svg/logo.svg',
-              width: 40.0,
-              height: 40.0,
+              width: 45.0,
+              height: 45.0,
             ),
             const SizedBox(width: 8),
             Column(
@@ -231,7 +231,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const Text(
                       'Online',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 14,
                         fontFamily: 'Montserrat',
                         color: Colors.black,
                       ),
