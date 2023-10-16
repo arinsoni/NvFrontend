@@ -82,18 +82,23 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<Map<String, dynamic>> fetchResponseFromAPI(
-      String userInput, String userId) async {
+      String userInput, String userId, DateTime timestamp) async {
     try {
       final response = await http.post(
         Uri.parse('http://127.0.0.1:5000/process_query'),
         headers: {
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({'user_input': userInput, 'userId': userId}),
+        body: jsonEncode({
+          'user_input': userInput,
+          'userId': userId,
+          'timestamp': timestamp.toIso8601String(),
+        }),
       );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
+
         return data;
       } else {
         throw Exception(
@@ -118,6 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (message.isNotEmpty) {
       DateTime now = DateTime.now();
+
       setState(() {
         audioUrl = '';
 
@@ -147,10 +153,10 @@ class _HomeScreenState extends State<HomeScreen> {
         isLoading = true;
       });
 
-      await Future.delayed(Duration(seconds: 2));
+      // await Future.delayed(Duration(seconds: 2));
 
       Map<String, dynamic> apiResponse =
-          await fetchResponseFromAPI(message, userId);
+          await fetchResponseFromAPI(message, userId, now);
       now = DateTime.now();
       setState(() {
         messages.insert(0, {
@@ -180,6 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     String message = messages[index + 1]['text'];
+    DateTime now = DateTime.now();
 
     setState(() {
       messages.removeAt(index);
@@ -187,7 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     Map<String, dynamic> apiResponse =
-        await fetchResponseFromAPI(message, userId);
+        await fetchResponseFromAPI(message, userId, now);
 
     setState(() {
       messages.insert(0, {
@@ -237,9 +244,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<List<Map<String, dynamic>>> fetchMessages(String userId) async {
     if (userId != null) {
-      print("UserId: $userId"); 
+      print("UserId: $userId");
       var url = Uri.parse('http://127.0.0.1:5000/get_messages/$userId');
-      print("URL: $url"); 
+      print("URL: $url");
 
       try {
         final response =
@@ -593,17 +600,11 @@ class _HomeScreenState extends State<HomeScreen> {
       future: fetchMessages(userId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(
-              child:
-                  CircularProgressIndicator()); 
+          return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
-          return Center(
-              child: Text(
-                  'Error loading messages ')); 
+          return const Center(child: Text('Error loading messages '));
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return Center(
-              child: Text(
-                  'No messages found')); 
+          return const Center(child: Text('No messages found'));
         } else {
           List<Map<String, dynamic>> userMessages =
               snapshot.data!.map((message) {
@@ -612,8 +613,6 @@ class _HomeScreenState extends State<HomeScreen> {
             }
             return message;
           }).toList();
-
-          print(userMessages);
 
           print("userMessages : $userMessages");
 
@@ -698,16 +697,33 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: ListView.builder(
                           itemCount: userMessages.length,
                           itemBuilder: (context, index) {
-                            DateTime messageTime =
-                                userMessages[index]['timestamp'];
+                            // DateTime messageTime = DateTime.parse(
+                            //     userMessages[index]['message']['timestamp']);
 
-                            print("messages: ${messageTime.day}");
+                            // print("message Time: ${messageTime.day}");
+                            print(
+                                "debugging time: ${userMessages[index]['message']['timestamp']}");
 
-                            DateTime currentDate = DateTime.now();
 
-                            bool isToday = messageTime.day == currentDate.day &&
-                                messageTime.month == currentDate.month &&
-                                messageTime.year == currentDate.year;
+                            DateTime messageTime = DateTime.parse(
+                                userMessages[index]['message']['timestamp']
+                                    .toString());
+                                    DateTime currentDate = DateTime.now();
+
+                            print("Parsed message time: ${DateTime.parse(
+                                userMessages[index]['message']['timestamp']
+                                    .toString()).day}");
+                            
+
+                            
+
+                            bool isToday = messageTime.day ==
+                                    currentDate.day &&
+                                messageTime.month ==
+                                    currentDate.month &&
+                                messageTime.year ==
+                                    currentDate.year;
+                            print("checking bool: $isToday");
 
                             String timestampHeading = isToday
                                 ? 'Today'
@@ -715,10 +731,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
                             if (index == 0 ||
                                 messageTime.day !=
-                                    userMessages[index - 1]['timestamp'].day ||
+                                    DateTime.parse(
+                                userMessages[index]['message']['timestamp']
+                                    .toString()).day ||
                                 messageTime.month !=
-                                    userMessages[index - 1]['timestamp']
-                                        .month) {
+                                     DateTime.parse(
+                                userMessages[index]['message']['timestamp']
+                                    .toString()).month) {
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -733,8 +752,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                     ),
                                   ),
+                                  
                                   MessageListItem(
-                                    message: userMessages[index],
+                                    message: userMessages[index]['message'],
                                     isFavorite: userMessages[index]
                                             ['favorite'] ??
                                         false,
@@ -743,7 +763,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               );
                             } else {
                               return MessageListItem(
-                                message: userMessages[index],
+                                message: userMessages[index]['message'],
                                 isFavorite:
                                     userMessages[index]['favorite'] ?? false,
                               );
@@ -798,7 +818,7 @@ class _MessageListItemState extends State<MessageListItem> {
           color: isFavorite ? Colors.red : Colors.grey,
         ),
       ),
-      title: Text(widget.message['text']),
+      title: Text(widget.message['input']),
     );
   }
 }
