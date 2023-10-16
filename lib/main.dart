@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:intl/intl.dart';
@@ -6,6 +8,7 @@ import 'package:nvsirai/widgets/message_input.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(const NVSirAI());
@@ -45,9 +48,30 @@ class _HomeScreenState extends State<HomeScreen> {
   late Color mColor = Colors.transparent;
   bool isFavorite = false;
 
+  String userId = '';
+  @override
+  void initState() {
+    super.initState();
+    _loadUserId();
+  }
+
+  Future<void> _loadUserId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? id = prefs.getString('user_id');
+    if (id == null) {
+      var random = Random();
+      var values = List<int>.generate(12, (i) => random.nextInt(256));
+      id = base64UrlEncode(values);
+      await prefs.setString('user_id', id);
+    }
+    setState(() {
+      userId = id!;
+    });
+  }
+
   Future<void> deleteAllAudioFiles() async {
     final response = await http.delete(
-      Uri.parse('https://arinsoni.pythonanywhere.com/delete-audios'),
+      Uri.parse('http://127.0.0.1:5000/delete-audios'),
     );
 
     if (response.statusCode == 200) {
@@ -57,14 +81,15 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<Map<String, dynamic>> fetchResponseFromAPI(String userInput) async {
+  Future<Map<String, dynamic>> fetchResponseFromAPI(
+      String userInput, String userId) async {
     try {
       final response = await http.post(
-        Uri.parse('https://arinsoni.pythonanywhere.com/process_query'),
+        Uri.parse('http://127.0.0.1:5000/process_query'),
         headers: {
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({'user_input': userInput}),
+        body: jsonEncode({'user_input': userInput, 'userId': userId}),
       );
 
       if (response.statusCode == 200) {
@@ -113,7 +138,8 @@ class _HomeScreenState extends State<HomeScreen> {
             'text': message,
             'sender': 'user',
             'favorite': false,
-            'timestamp': now
+            'timestamp': now,
+            'userId': userId,
           });
         }
 
@@ -123,7 +149,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
       await Future.delayed(Duration(seconds: 2));
 
-      Map<String, dynamic> apiResponse = await fetchResponseFromAPI(message);
+      Map<String, dynamic> apiResponse =
+          await fetchResponseFromAPI(message, userId);
       now = DateTime.now();
       setState(() {
         messages.insert(0, {
@@ -159,7 +186,8 @@ class _HomeScreenState extends State<HomeScreen> {
       isLoading = true;
     });
 
-    Map<String, dynamic> apiResponse = await fetchResponseFromAPI(message);
+    Map<String, dynamic> apiResponse =
+        await fetchResponseFromAPI(message, userId);
 
     setState(() {
       messages.insert(0, {
@@ -207,6 +235,43 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  Future<List<Map<String, dynamic>>> fetchMessages(String userId) async {
+    if (userId != null) {
+      print("UserId: $userId"); 
+      var url = Uri.parse('http://127.0.0.1:5000/get_messages/$userId');
+      print("URL: $url"); 
+
+      try {
+        final response =
+            await http.get(url, headers: {'Content-Type': 'application/json'});
+
+        if (response.statusCode == 200) {
+          var data = json.decode(response.body);
+
+          if (data is List) {
+            return data.map((message) {
+              if (message is Map<String, dynamic>) {
+                print(message);
+                return message;
+              } else {
+                throw Exception('Data format is not as expected');
+              }
+            }).toList();
+          } else {
+            throw Exception('Response data is not a list');
+          }
+        } else {
+          throw Exception(
+              'Failed to load messages with status code getMsg ${response.statusCode}');
+        }
+      } catch (e) {
+        throw Exception('Failed to make the API request for gteMsg: $e');
+      }
+    } else {
+      return [];
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
@@ -219,9 +284,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       // key: _scaffoldKey,
       endDrawer: _buildHistoryDrawer(),
-      endDrawerEnableOpenDragGesture: true,
-      
-      drawerEnableOpenDragGesture: false,
+
       appBar: AppBar(
         backgroundColor: Colors.white,
         leading: IconButton(
@@ -278,11 +341,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-       
         actions: [
           Builder(
-            builder: (context) => 
-                Padding(
+            builder: (context) => Padding(
               padding: const EdgeInsets.only(right: 8.0),
               child: IconButton(
                   icon: SvgPicture.asset(
@@ -524,146 +585,180 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHistoryDrawer() {
-    List<Map<String, dynamic>> userMessages =
-        messages.where((message) => message['sender'] == 'user').toList();
+    if (userId.isEmpty) {
+      return Center(child: CircularProgressIndicator());
+    }
+    print("1st come here ");
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: fetchMessages(userId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(
+              child:
+                  CircularProgressIndicator()); 
+        } else if (snapshot.hasError) {
+          return Center(
+              child: Text(
+                  'Error loading messages ')); 
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(
+              child: Text(
+                  'No messages found')); 
+        } else {
+          List<Map<String, dynamic>> userMessages =
+              snapshot.data!.map((message) {
+            if (message['timestamp'] != null) {
+              message['timestamp'] = DateTime.parse(message['timestamp']);
+            }
+            return message;
+          }).toList();
 
-    return Container(
-      margin: EdgeInsets.fromLTRB(0, MediaQuery.of(context).padding.top,  0, 0),
-      child: Drawer(
-        
-        child: AbsorbPointer(
-          absorbing: false,
-          child: Container(
-            
-            decoration: const BoxDecoration(
-              border: Border(
-                left: BorderSide(
-                  color: Color(0xFF7356E8),
-                  width: 3.0,
-                ),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                 
-                Container(
-                  
-                 
-                  child: Stack(
-                    alignment: Alignment.centerLeft,
+          print(userMessages);
+
+          print("userMessages : $userMessages");
+
+          return Container(
+            margin: EdgeInsets.fromLTRB(
+                0, MediaQuery.of(context).padding.top, 0, 0),
+            child: Drawer(
+              child: AbsorbPointer(
+                absorbing: false,
+                child: Container(
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      left: BorderSide(
+                        color: Color(0xFF7356E8),
+                        width: 3.0,
+                      ),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Positioned(
-                        left: 0,
-                        top: 0,
-                        bottom: 0,
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF7356E8),
-                            borderRadius: BorderRadius.only(
-                              bottomRight: Radius.circular(50),
-                            ),
-                          ),
-                          width: 50,
-                          height: 50,
-                          child: Padding(
-                            padding:
-                                const EdgeInsets.only(right: 10.0, bottom: 10),
-                            child: IconButton(
-                              icon: Icon(Icons.close, color: Colors.white),
-                              onPressed: () => Navigator.of(context).pop(),
-                              splashRadius: 1,
-                              hoverColor: Colors.transparent,
-                              splashColor: Colors.transparent,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 15.0),
-                        child: Center(
-                          child: Column(
-                            children: [
-                              Text(
-                                'Chat History',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 20,
-                                  fontFamily: 'Goldman',
+                      Container(
+                        child: Stack(
+                          alignment: Alignment.centerLeft,
+                          children: [
+                            Positioned(
+                              left: 0,
+                              top: 0,
+                              bottom: 0,
+                              child: Container(
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF7356E8),
+                                  borderRadius: BorderRadius.only(
+                                    bottomRight: Radius.circular(50),
+                                  ),
+                                ),
+                                width: 50,
+                                height: 50,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(
+                                      right: 10.0, bottom: 10),
+                                  child: IconButton(
+                                    icon:
+                                        Icon(Icons.close, color: Colors.white),
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(),
+                                    splashRadius: 1,
+                                    hoverColor: Colors.transparent,
+                                    splashColor: Colors.transparent,
+                                  ),
                                 ),
                               ),
-                              Container(
-                                margin: EdgeInsets.fromLTRB(50, 0, 30, 0),
-                                child: Divider(
-                                  thickness: 1,
-                                  color: Color(0xFF878787),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 15.0),
+                              child: Center(
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      'Chat History',
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 20,
+                                        fontFamily: 'Goldman',
+                                      ),
+                                    ),
+                                    Container(
+                                      margin: EdgeInsets.fromLTRB(50, 0, 30, 0),
+                                      child: Divider(
+                                        thickness: 1,
+                                        color: Color(0xFF878787),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: userMessages.length,
+                          itemBuilder: (context, index) {
+                            DateTime messageTime =
+                                userMessages[index]['timestamp'];
+
+                            print("messages: ${messageTime.day}");
+
+                            DateTime currentDate = DateTime.now();
+
+                            bool isToday = messageTime.day == currentDate.day &&
+                                messageTime.month == currentDate.month &&
+                                messageTime.year == currentDate.year;
+
+                            String timestampHeading = isToday
+                                ? 'Today'
+                                : DateFormat('MMMM yyyy').format(messageTime);
+
+                            if (index == 0 ||
+                                messageTime.day !=
+                                    userMessages[index - 1]['timestamp'].day ||
+                                messageTime.month !=
+                                    userMessages[index - 1]['timestamp']
+                                        .month) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                        16.0, 8.0, 0, 8.0),
+                                    child: Text(
+                                      timestampHeading,
+                                      style: TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ),
+                                  MessageListItem(
+                                    message: userMessages[index],
+                                    isFavorite: userMessages[index]
+                                            ['favorite'] ??
+                                        false,
+                                  ),
+                                ],
+                              );
+                            } else {
+                              return MessageListItem(
+                                message: userMessages[index],
+                                isFavorite:
+                                    userMessages[index]['favorite'] ?? false,
+                              );
+                            }
+                          },
+                        ),
+                      )
                     ],
                   ),
                 ),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: userMessages.length,
-                    itemBuilder: (context, index) {
-                      DateTime messageTime = userMessages[index]['timestamp'];
-    
-                      print("messages: ${messageTime.day}");
-    
-                      DateTime currentDate = DateTime.now();
-    
-                      bool isToday = messageTime.day == currentDate.day &&
-                          messageTime.month == currentDate.month &&
-                          messageTime.year == currentDate.year;
-    
-                      String timestampHeading = isToday
-                          ? 'Today'
-                          : DateFormat('MMMM yyyy').format(messageTime);
-    
-                      if (index == 0 ||
-                          messageTime.day !=
-                              userMessages[index - 1]['timestamp'].day ||
-                          messageTime.month !=
-                              userMessages[index - 1]['timestamp'].month) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding:
-                                  const EdgeInsets.fromLTRB(16.0, 8.0, 0, 8.0),
-                              child: Text(
-                                timestampHeading,
-                                style: TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ),
-                            MessageListItem(
-                              message: userMessages[index],
-                              isFavorite:
-                                  userMessages[index]['favorite'] ?? false,
-                            ),
-                          ],
-                        );
-                      } else {
-                        return MessageListItem(
-                          message: userMessages[index],
-                          isFavorite: userMessages[index]['favorite'] ?? false,
-                        );
-                      }
-                    },
-                  ),
-                )
-              ],
+              ),
             ),
-          ),
-        ),
-      ),
+          );
+        }
+      },
     );
   }
 }
@@ -704,7 +799,6 @@ class _MessageListItemState extends State<MessageListItem> {
         ),
       ),
       title: Text(widget.message['text']),
-      // onTap function if required
     );
   }
 }

@@ -45,6 +45,7 @@ dependencies:
   flutter_spinkit: ^5.2.0
   wave: ^0.2.2
   intl: ^0.18.1
+  shared_preferences: ^2.2.2
 
 
 dev_dependencies:
