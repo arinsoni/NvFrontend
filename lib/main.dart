@@ -702,27 +702,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
                             // print("message Time: ${messageTime.day}");
                             print(
-                                "debugging time: ${userMessages[index]['message']['timestamp']}");
-
+                                "debugging time: ${userMessages[index]}");
 
                             DateTime messageTime = DateTime.parse(
                                 userMessages[index]['message']['timestamp']
                                     .toString());
-                                    DateTime currentDate = DateTime.now();
+                            DateTime currentDate = DateTime.now();
 
-                            print("Parsed message time: ${DateTime.parse(
-                                userMessages[index]['message']['timestamp']
-                                    .toString()).day}");
-                            
+                            print(
+                                "Parsed message time: ${DateTime.parse(userMessages[index]['message']['timestamp'].toString()).day}");
 
-                            
-
-                            bool isToday = messageTime.day ==
-                                    currentDate.day &&
-                                messageTime.month ==
-                                    currentDate.month &&
-                                messageTime.year ==
-                                    currentDate.year;
+                            bool isToday = messageTime.day == currentDate.day &&
+                                messageTime.month == currentDate.month &&
+                                messageTime.year == currentDate.year;
                             print("checking bool: $isToday");
 
                             String timestampHeading = isToday
@@ -731,13 +723,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
                             if (index == 0 ||
                                 messageTime.day !=
-                                    DateTime.parse(
-                                userMessages[index]['message']['timestamp']
-                                    .toString()).day ||
+                                    DateTime.parse(userMessages[index]
+                                                ['message']['timestamp']
+                                            .toString())
+                                        .day ||
                                 messageTime.month !=
-                                     DateTime.parse(
-                                userMessages[index]['message']['timestamp']
-                                    .toString()).month) {
+                                    DateTime.parse(userMessages[index]
+                                                ['message']['timestamp']
+                                            .toString())
+                                        .month) {
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -752,7 +746,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                     ),
                                   ),
-                                  
                                   MessageListItem(
                                     message: userMessages[index]['message'],
                                     isFavorite: userMessages[index]
@@ -794,31 +787,54 @@ class MessageListItem extends StatefulWidget {
   @override
   _MessageListItemState createState() => _MessageListItemState();
 }
-
 class _MessageListItemState extends State<MessageListItem> {
   late bool isFavorite;
 
   @override
   void initState() {
     super.initState();
-    isFavorite = widget.isFavorite;
+    isFavorite = widget.message['isFavorite'] ?? false;  
   }
+
+ Future<void> _updateFavorite(bool newFavoriteStatus) async {
+    print('Updating favorite status...');  
+    try {
+        var response = await http.post(
+            Uri.parse('http://127.0.0.1:5000/update-favorite'),
+            body: jsonEncode({
+                'message': widget.message,
+                'isFavorite': newFavoriteStatus,
+            }),
+            headers: {"Content-Type": "application/json"},
+        );
+
+        var data = json.decode(response.body);
+        // print('Response from backend: $data');  
+        if (data['success']) {
+            setState(() {
+                isFavorite = newFavoriteStatus;
+            });
+        } 
+    } catch (e) {
+        print('Error: $e');  
+      
+    }
+}
+
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
       leading: GestureDetector(
-        onTap: () {
-          setState(() {
-            isFavorite = !isFavorite;
-          });
-        },
+        onTap: () => _updateFavorite(!isFavorite),
         child: Icon(
           isFavorite ? Icons.favorite : Icons.favorite_border,
           color: isFavorite ? Colors.red : Colors.grey,
         ),
       ),
-      title: Text(widget.message['input']),
+      title: Text(widget.message['input']), 
     );
   }
 }
+
+
