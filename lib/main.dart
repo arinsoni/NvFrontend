@@ -115,6 +115,41 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+    Future<bool> deleteThread(userId, threadId) async {
+  try {
+    print("mi gai $threadId");
+    var response = await http.post(
+      Uri.parse('http://127.0.0.1:5000/delete_thread'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'userId': userId, 'threadId': threadId}),
+    );
+
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      print('Failed to delete thread: ${response.body}');
+      return false;
+    }
+  } catch (e) {
+    print('Error occurred while deleting thread: $e');
+    return false;
+  }
+}
+
+void _deleteThread(String threadId) async {
+  bool isDeleted = await deleteThread(userId, threadId);
+  
+  if (isDeleted) {
+    setState(() {
+      threads.removeWhere((thread) => thread['threadId'] == threadId);
+      Navigator.of(context).pop();
+    });
+    print('Thread deleted successfully');
+  } else {
+    print('Failed to delete the thread');
+  }
+}
+
   Future<void> _loadUserId() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? id = prefs.getString('user_id');
@@ -793,7 +828,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       var threadName = threads[index]['threadName'];
                       bool isFavorite = threads[index]['isFavorite'] ;
                       print(
-                          "threadId = $threadId and threadName = $threadName");
+                          "threadId = $threadId and threadName = ${threads.length}");
 
                       // print("debugging time: ${userMessages[index]}");
 
@@ -832,6 +867,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         threadId: threadId,
                         isFavorite:
                             isFavorite, 
+                            onDelete: () { _deleteThread(threadId); }, 
                         onTap: () {
                           setState(() {
                             currentThreadId = threadId;
@@ -905,14 +941,14 @@ class MessageListItem extends StatefulWidget {
   final Function() onTap;
   final String userId;
   final String threadId;
-
+  final Function() onDelete;
 
 
   const MessageListItem(
       {required this.message,
       required this.isFavorite,
       Key? key,
-      required this.onTap, required this.userId, required this.threadId,})
+      required this.onTap, required this.userId, required this.threadId, required this.onDelete,})
       : super(key: key);
 
   @override
@@ -972,6 +1008,14 @@ class _MessageListItemState extends State<MessageListItem> {
       },
     ),
     title: Text(widget.message),
+     trailing: IconButton(
+      icon: Icon(
+        Icons.delete,
+        color: Colors.red,  // You can choose your own color
+      ),
+      onPressed: widget.onDelete
+    
+    ),
   
   ),
 );
