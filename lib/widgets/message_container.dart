@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:nvsirai/main.dart';
 
 import 'CircularIcon_Button.dart';
 import 'audio _ player.dart';
 
 class MessageContainer extends StatelessWidget {
-  final Map<String, dynamic> message;
+  // final Map<String, dynamic> message;
   final Function(String) onEdit;
   final bool isLoading;
   final Function(int) onRefresh;
+   final Message message;
 final int index;
 
 
@@ -22,12 +24,12 @@ final int index;
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading && message['sender'] == 'user') {
+    if (isLoading && message.sender == 'user') {
       print("Showing loading indicator...");
       return _buildLoadingIndicator();
     } else {
       print("check : $isLoading");
-      final isUserMessage = message['sender'] == 'user';
+      final isUserMessage = message.sender == 'user';
       double screenWidth = MediaQuery.of(context).size.width;
       double maxWidth = isUserMessage ? screenWidth * 0.8 : screenWidth * 0.8;
 
@@ -55,7 +57,7 @@ final int index;
                         onPressed: () {
                           
                             if (isUserMessage) {
-                              onEdit(message['text']);
+                              onEdit(message.text);
                             }
                         
                         },
@@ -91,13 +93,13 @@ final int index;
               ),
               child: Column(
                 children: [
-                  if (message['audio'] != null && message['audio'].isNotEmpty)
-                    AudioPlayerWidget(key: UniqueKey(), url: message['audio']),
+                  if (message.audioUrl != null && message.audioUrl!.isNotEmpty)
+                    AudioPlayerWidget(key: UniqueKey(), url: message.audioUrl!),
                   Padding(
                     padding:
                         EdgeInsets.fromLTRB(16, isUserMessage ? 8 : 2, 8, 8),
                     child: Text(
-                      message['text'],
+                      message.text,
                       style: TextStyle(
                         color: isUserMessage ? Colors.white : Colors.black,
                         fontSize: 16,

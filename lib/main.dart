@@ -37,7 +37,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final List<Map<String, dynamic>> messages = [];
+  final List<Message> messages = [];
+
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _messageController = TextEditingController();
   String originalMessage = "";
@@ -114,62 +115,38 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    String message = _messageController.text.trim();
-    if (!isFirstMessageSent) {
-      setState(() {
-        isFirstMessageSent = true;
-      });
-    }
+    String messageText = _messageController.text.trim();
 
-    if (message.isNotEmpty) {
+    if (messageText.isNotEmpty) {
       DateTime now = DateTime.now();
 
+      Message message = Message(
+        text: messageText,
+        sender: 'user',
+        timestamp: now,
+        userId: userId,
+      );
+
       setState(() {
-        audioUrl = '';
-
-        if (originalMessage.isNotEmpty) {
-          int index = messages.indexWhere(
-              (m) => m['text'] == originalMessage && m['sender'] == 'user');
-
-          if (index != -1) {
-            messages[index]['text'] = message;
-            if (index - 1 >= 0 && messages[index - 1]['sender'] == 'server') {
-              messages.removeAt(index - 1);
-            }
-          }
-
-          originalMessage = "";
-        } else {
-          messages.insert(0, {
-            'text': message,
-            'sender': 'user',
-            'favorite': false,
-            'timestamp': now,
-            'userId': userId,
-          });
-        }
-
+        messages.insert(0, message);
         _messageController.clear();
         isLoading = true;
       });
 
-      // await Future.delayed(Duration(seconds: 2));
-
       Map<String, dynamic> apiResponse =
-          await fetchResponseFromAPI(message, userId, now);
+          await fetchResponseFromAPI(messageText, userId, now);
       now = DateTime.now();
+
+      Message responseMessage = Message(
+        text: apiResponse['text_response'],
+        sender: 'server',
+        timestamp: now,
+        userId: userId,
+        audioUrl: apiResponse['audio_response'],
+      );
+
       setState(() {
-        messages.insert(0, {
-          'text': apiResponse['text_response'],
-          'sender': 'server',
-          'audio': apiResponse['audio_response'],
-          'timestamp': now
-        });
-
-        if (apiResponse['audio_response'] != null) {
-          audioUrl = apiResponse['audio_response'];
-        }
-
+        messages.insert(0, responseMessage);
         isLoading = false;
       });
     }
@@ -185,7 +162,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    String message = messages[index + 1]['text'];
+    Message messageToRefresh = messages[index + 1];
     DateTime now = DateTime.now();
 
     setState(() {
@@ -193,15 +170,18 @@ class _HomeScreenState extends State<HomeScreen> {
       isLoading = true;
     });
 
-    Map<String, dynamic> apiResponse =
-        await fetchResponseFromAPI(message, userId, now);
+    Map<String, dynamic> apiResponse = await fetchResponseFromAPI(
+        messageToRefresh.text, messageToRefresh.userId, now);
+
+    Message refreshedMessage = Message(
+        text: apiResponse['text_response'],
+        sender: 'server',
+        timestamp: now,
+        userId: messageToRefresh.userId,
+        audioUrl: apiResponse['audio_response']);
 
     setState(() {
-      messages.insert(0, {
-        'text': apiResponse['text_response'],
-        'sender': 'server',
-        'audio': apiResponse['audio_response']
-      });
+      messages.insert(0, refreshedMessage);
 
       if (apiResponse['audio_response'] != null) {
         audioUrl = apiResponse['audio_response'];
@@ -701,8 +681,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             //     userMessages[index]['message']['timestamp']);
 
                             // print("message Time: ${messageTime.day}");
-                            print(
-                                "debugging time: ${userMessages[index]}");
+                            print("debugging time: ${userMessages[index]}");
 
                             DateTime messageTime = DateTime.parse(
                                 userMessages[index]['message']['timestamp']
@@ -787,40 +766,39 @@ class MessageListItem extends StatefulWidget {
   @override
   _MessageListItemState createState() => _MessageListItemState();
 }
+
 class _MessageListItemState extends State<MessageListItem> {
   late bool isFavorite;
 
   @override
   void initState() {
     super.initState();
-    isFavorite = widget.message['isFavorite'] ?? false;  
+    isFavorite = widget.message['isFavorite'] ?? false;
   }
 
- Future<void> _updateFavorite(bool newFavoriteStatus) async {
-    print('Updating favorite status...');  
+  Future<void> _updateFavorite(bool newFavoriteStatus) async {
+    print('Updating favorite status...');
     try {
-        var response = await http.post(
-            Uri.parse('http://127.0.0.1:5000/update-favorite'),
-            body: jsonEncode({
-                'message': widget.message,
-                'isFavorite': newFavoriteStatus,
-            }),
-            headers: {"Content-Type": "application/json"},
-        );
+      var response = await http.post(
+        Uri.parse('http://127.0.0.1:5000/update-favorite'),
+        body: jsonEncode({
+          'message': widget.message,
+          'isFavorite': newFavoriteStatus,
+        }),
+        headers: {"Content-Type": "application/json"},
+      );
 
-        var data = json.decode(response.body);
-        // print('Response from backend: $data');  
-        if (data['success']) {
-            setState(() {
-                isFavorite = newFavoriteStatus;
-            });
-        } 
+      var data = json.decode(response.body);
+      // print('Response from backend: $data');
+      if (data['success']) {
+        setState(() {
+          isFavorite = newFavoriteStatus;
+        });
+      }
     } catch (e) {
-        print('Error: $e');  
-      
+      print('Error: $e');
     }
-}
-
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -832,9 +810,48 @@ class _MessageListItemState extends State<MessageListItem> {
           color: isFavorite ? Colors.red : Colors.grey,
         ),
       ),
-      title: Text(widget.message['input']), 
+      title: Text(widget.message['input']),
     );
   }
 }
 
+// message.dart
+class Message {
+  final String text;
+  final String sender;
+  final DateTime timestamp;
+  bool isFavorite;
+  final String userId;
+  String? audioUrl;
 
+  Message({
+    required this.text,
+    required this.sender,
+    required this.timestamp,
+    this.isFavorite = false,
+    required this.userId,
+    this.audioUrl,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'text': text,
+      'sender': sender,
+      'timestamp': timestamp.toIso8601String(),
+      'isFavorite': isFavorite,
+      'userId': userId,
+      'audioUrl': audioUrl,
+    };
+  }
+
+  factory Message.fromMap(Map<String, dynamic> map) {
+    return Message(
+      text: map['text'],
+      sender: map['sender'],
+      timestamp: DateTime.parse(map['timestamp']),
+      isFavorite: map['isFavorite'] ?? false,
+      userId: map['userId'],
+      audioUrl: map['audioUrl'],
+    );
+  }
+}
