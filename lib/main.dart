@@ -178,7 +178,9 @@ class _HomeScreenState extends State<HomeScreen> {
           print("index $index");
 
           if (index != -1) {
+             deleteMessage(userId, currentThreadId, index);
             messages[index].text = messageText;
+           
             if (index - 1 >= 0 && messages[index - 1].sender == 'server') {
               messages.removeAt(index - 1);
             }
@@ -238,6 +240,30 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+Future<void> deleteMessage(String userId, String threadId, int index) async {
+  try {
+    var response = await http.post(
+      Uri.parse('http://127.0.0.1:5000/delete_message'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'userId': userId,
+        'threadId': threadId,
+        'index': index,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      print('Message deleted successfully');
+    } else {
+      print('Failed to delete message: ${response.body}');
+    }
+  } catch (e) {
+    print('Error occurred while deleting message: $e');
+  }
+}
+
+
+
   void mySendMessageFunction(String message) {
     _messageController.text = message;
     _sendMessage();
@@ -249,6 +275,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     Message messageToRefresh = messages[index + 1];
+    deleteMessage(userId, currentThreadId, index);
     DateTime now = DateTime.now();
 
     setState(() {
@@ -267,6 +294,7 @@ class _HomeScreenState extends State<HomeScreen> {
         audioUrl: apiResponse['audio_response']);
 
     setState(() {
+
       messages.insert(0, refreshedMessage);
 
       if (apiResponse['audio_response'] != null) {
