@@ -82,19 +82,31 @@ class _HomeScreenState extends State<HomeScreen> {
     if (response.statusCode == 200) {
       print("API response status code: 200");
 
-      var data = json.decode(response.body) as List;
+      var data = json.decode(response.body);
       print("data fetched by fetchThreads: $data");
 
-      setState(() {
-        threads = data
-            .map((thread) => {
-                  'threadId': thread['threadId'],
-                  'threadName': thread['threadName']
-                })
-            .toList();
+      if (data is List) {
+        setState(() {
+          threads = data
+              .map((thread) {
+                if (thread is Map) {
+                  return {
+                    'threadId': thread['threadId'] as String,
+                    'threadName': thread['threadName'] as String
+                  };
+                } else {
+                  return null;
+                }
+              })
+              .where((thread) => thread != null)
+              .cast<Map<String, dynamic>>()
+              .toList();
 
-        print("threads fetched: $threads");
-      });
+          print("threads fetched: $threads");
+        });
+      } else {
+        print("Unexpected data format received");
+      }
     } else {
       print("API response status code: ${response.statusCode}");
     }
@@ -156,7 +168,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
- 
   void _sendMessage() async {
     if (isLoading) {
       return;
@@ -178,14 +189,13 @@ class _HomeScreenState extends State<HomeScreen> {
           print("index $index");
 
           if (index != -1) {
-             deleteMessage(userId, currentThreadId, index);
+            deleteMessage(userId, currentThreadId, index);
             messages[index].text = messageText;
-           
+
             if (index - 1 >= 0 && messages[index - 1].sender == 'server') {
               messages.removeAt(index - 1);
             }
           }
-         
 
           originalMessage = "";
         } else {
@@ -240,8 +250,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-Future<void> deleteMessage(String userId, String threadId, int index) async {
-  try {
+  Future<void> deleteMessage(String userId, String threadId, int index) async {
+
+    // }
+    try {
     var response = await http.post(
       Uri.parse('http://127.0.0.1:5000/delete_message'),
       headers: {'Content-Type': 'application/json'},
@@ -260,9 +272,7 @@ Future<void> deleteMessage(String userId, String threadId, int index) async {
   } catch (e) {
     print('Error occurred while deleting message: $e');
   }
-}
-
-
+  }
 
   void mySendMessageFunction(String message) {
     _messageController.text = message;
@@ -294,7 +304,6 @@ Future<void> deleteMessage(String userId, String threadId, int index) async {
         audioUrl: apiResponse['audio_response']);
 
     setState(() {
-
       messages.insert(0, refreshedMessage);
 
       if (apiResponse['audio_response'] != null) {
