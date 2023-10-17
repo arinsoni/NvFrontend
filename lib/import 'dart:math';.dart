@@ -94,8 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   return {
                     'threadId': thread['threadId'] as String,
                     'threadName': thread['threadName'] as String,
-                     'isFavorite': thread['isFavorite'] as bool,
-                   
+                    'isFavorite': thread['isFavorite'] as bool,
                   };
                 } else {
                   return null;
@@ -140,6 +139,41 @@ class _HomeScreenState extends State<HomeScreen> {
       throw Exception('Failed to delete audio files');
     }
   }
+
+  Future<bool> deleteThread(userId, threadId) async {
+  try {
+    print("mi gai $threadId");
+    var response = await http.post(
+      Uri.parse('http://127.0.0.1:5000/delete_thread'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'userId': userId, 'threadId': threadId}),
+    );
+
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      print('Failed to delete thread: ${response.body}');
+      return false;
+    }
+  } catch (e) {
+    print('Error occurred while deleting thread: $e');
+    return false;
+  }
+}
+
+void _deleteThread(String threadId) async {
+  bool isDeleted = await deleteThread(userId, threadId);
+  
+  if (isDeleted) {
+    setState(() {
+      threads.removeWhere((thread) => thread['threadId'] == threadId);
+      Navigator.of(context).pop();
+    });
+    print('Thread deleted successfully');
+  } else {
+    print('Failed to delete the thread');
+  }
+}
 
   Future<Map<String, dynamic>> fetchResponseFromAPI(String userInput,
       String userId, DateTime timestamp, bool isFirstMessageSent) async {
@@ -791,9 +825,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       print("lisdt view $threads");
                       var threadId = threads[index]['threadId'];
                       var threadName = threads[index]['threadName'];
+
                       bool isFavorite = threads[index]['isFavorite'] ;
                       print(
-                          "threadId = $threadId and threadName = $threadName");
+                          "threadId = $threadId and threadName = $isFavorite");
 
                       // print("debugging time: ${userMessages[index]}");
 
@@ -828,8 +863,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       return MessageListItem(
                         message: threadName,
-                        userId: userId,
-                        threadId: threadId,
                         isFavorite:
                             isFavorite, 
                         onTap: () {
@@ -849,7 +882,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       sender: 'user',
                                       timestamp: DateTime.parse(
                                           messageData['timestamp']),
-                                      
+                                      isFavorite: messageData['isFavorite'],
                                       userId: userId,
                                     );
 
@@ -858,7 +891,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       sender: 'server',
                                       timestamp: DateTime.parse(
                                           messageData['timestamp']),
-                                      
+                                      isFavorite: messageData['isFavorite'],
                                       userId: userId,
                                       audioUrl: messageData['audioUrl'],
                                     );
@@ -878,7 +911,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           }).catchError((error) {
                             print('Error fetching messages: $error');
                           });
-                        },
+                        }, userId: userId, threadId: threadId, onDelete: () { _deleteThread(threadId); }, 
                       );
                       // } else {
                       //   return MessageListItem(
@@ -905,14 +938,13 @@ class MessageListItem extends StatefulWidget {
   final Function() onTap;
   final String userId;
   final String threadId;
-
-
+  final Function() onDelete;
 
   const MessageListItem(
       {required this.message,
       required this.isFavorite,
       Key? key,
-      required this.onTap, required this.userId, required this.threadId,})
+      required this.onTap, required this.userId, required this.threadId, required this.onDelete})
       : super(key: key);
 
   @override
@@ -927,6 +959,7 @@ class _MessageListItemState extends State<MessageListItem> {
     super.initState();
     isFavorite =  widget.isFavorite;
   }
+
   Future<void> _updateFavorite(bool favStatus) async {
     print('Updating favorite thread status...');
     try {
@@ -955,6 +988,8 @@ class _MessageListItemState extends State<MessageListItem> {
   }
 
 
+
+
   @override
   Widget build(BuildContext context) {
     return InkWell(
@@ -972,9 +1007,17 @@ class _MessageListItemState extends State<MessageListItem> {
       },
     ),
     title: Text(widget.message),
-  
+    trailing: IconButton(
+      icon: Icon(
+        Icons.delete,
+        color: Colors.red,  // You can choose your own color
+      ),
+      onPressed: widget.onDelete
+    
+    ),
   ),
 );
+
   }
 }
 
@@ -982,7 +1025,7 @@ class Message {
   late String text;
   final String sender;
   final DateTime timestamp;
-
+  bool isFavorite;
   final String userId;
   String? audioUrl;
   String? threadId;
@@ -991,7 +1034,7 @@ class Message {
       {required this.text,
       required this.sender,
       required this.timestamp,
-  
+      this.isFavorite = false,
       required this.userId,
       this.audioUrl,
       this.threadId});
@@ -1001,7 +1044,7 @@ class Message {
       'text': text,
       'sender': sender,
       'timestamp': timestamp.toIso8601String(),
-
+      'isFavorite': isFavorite,
       'userId': userId,
       'audioUrl': audioUrl,
       'threadId': threadId
@@ -1013,10 +1056,11 @@ class Message {
       text: map['text'],
       sender: map['sender'],
       timestamp: DateTime.parse(map['timestamp'] ?? DateTime.now().toString()),
-
+      isFavorite: map['isFavorite'] ?? false,
       userId: map['userId'] ?? '',
       audioUrl: map['audioUrl'],
       threadId: map['threadId'],
     );
   }
 }
+
