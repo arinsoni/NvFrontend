@@ -90,9 +90,11 @@ class _HomeScreenState extends State<HomeScreen> {
           threads = data
               .map((thread) {
                 if (thread is Map) {
+                  print("map $thread");
                   return {
                     'threadId': thread['threadId'] as String,
-                    'threadName': thread['threadName'] as String
+                    'threadName': thread['threadName'] as String,
+                    'isFavorite': thread['isFavorite'] as bool,
                   };
                 } else {
                   return null;
@@ -788,8 +790,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       print("lisdt view $threads");
                       var threadId = threads[index]['threadId'];
                       var threadName = threads[index]['threadName'];
+
+                      bool isFavorite = threads[index]['isFavorite'] ;
                       print(
-                          "threadId = $threadId and threadName = $threadName");
+                          "threadId = $threadId and threadName = $isFavorite");
 
                       // print("debugging time: ${userMessages[index]}");
 
@@ -824,8 +828,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       return MessageListItem(
                         message: threadName,
-                        // isFavorite:
-                        //     false, // Replace with actual favorite status
+                        isFavorite:
+                            isFavorite, 
                         onTap: () {
                           setState(() {
                             currentThreadId = threadId;
@@ -872,7 +876,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           }).catchError((error) {
                             print('Error fetching messages: $error');
                           });
-                        },
+                        }, userId: userId, threadId: threadId, 
                       );
                       // } else {
                       //   return MessageListItem(
@@ -895,14 +899,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class MessageListItem extends StatefulWidget {
   final String message;
-  // final bool isFavorite;
+  final bool isFavorite;
   final Function() onTap;
+  final String userId;
+  final String threadId;
 
   const MessageListItem(
       {required this.message,
-      // required this.isFavorite,
+      required this.isFavorite,
       Key? key,
-      required this.onTap})
+      required this.onTap, required this.userId, required this.threadId})
       : super(key: key);
 
   @override
@@ -915,38 +921,53 @@ class _MessageListItemState extends State<MessageListItem> {
   @override
   void initState() {
     super.initState();
-    // isFavorite = widget.message['isFavorite'] ?? false;
+    isFavorite =  widget.isFavorite;
   }
 
-  Future<void> _updateFavorite(bool newFavoriteStatus) async {
-    print('Updating favorite status...');
+  Future<void> _updateFavorite(bool favStatus) async {
+    print('Updating favorite thread status...');
     try {
       var response = await http.post(
-        Uri.parse('http://127.0.0.1:5000/update-favorite'),
+        Uri.parse('http://127.0.0.1:5000/update-favorite-thread'),
         body: jsonEncode({
-          'message': widget.message,
-          'isFavorite': newFavoriteStatus,
+          'userId': widget.userId,  
+          'threadId': widget.threadId, 
+          'isFavorite': favStatus,
         }),
         headers: {"Content-Type": "application/json"},
       );
 
       var data = json.decode(response.body);
-      // print('Response from backend: $data');
+      print('Response from backend: $data');
       if (data['success']) {
         setState(() {
-          isFavorite = newFavoriteStatus;
+          isFavorite = favStatus;
         });
+      } else {
+        print('Error updating favorite status: ${data['error']}');
       }
     } catch (e) {
       print('Error: $e');
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: widget.onTap,
       child: ListTile(
+        leading: IconButton(
+          icon:  Icon(
+          isFavorite ? Icons.favorite : Icons.favorite_border,
+          color: isFavorite ? Colors.red : Colors.grey,
+        ),
+          onPressed: (){
+            setState(() {
+           _updateFavorite(!isFavorite);
+          });
+          },
+        ),
         title: Text(widget.message),
       ),
     );
