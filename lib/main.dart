@@ -94,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   return {
                     'threadId': thread['threadId'] as String,
                     'threadName': thread['threadName'] as String,
-                    'isFavorite': thread['isFavorite'] as bool,
+                   
                   };
                 } else {
                   return null;
@@ -790,10 +790,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       print("lisdt view $threads");
                       var threadId = threads[index]['threadId'];
                       var threadName = threads[index]['threadName'];
-
-                      bool isFavorite = threads[index]['isFavorite'] ;
                       print(
-                          "threadId = $threadId and threadName = $isFavorite");
+                          "threadId = $threadId and threadName = $threadName");
 
                       // print("debugging time: ${userMessages[index]}");
 
@@ -828,8 +826,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       return MessageListItem(
                         message: threadName,
-                        isFavorite:
-                            isFavorite, 
+                        // isFavorite:
+                        //     false, // Replace with actual favorite status
                         onTap: () {
                           setState(() {
                             currentThreadId = threadId;
@@ -847,7 +845,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       sender: 'user',
                                       timestamp: DateTime.parse(
                                           messageData['timestamp']),
-                                      isFavorite: messageData['isFavorite'],
+                                      
                                       userId: userId,
                                     );
 
@@ -856,7 +854,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       sender: 'server',
                                       timestamp: DateTime.parse(
                                           messageData['timestamp']),
-                                      isFavorite: messageData['isFavorite'],
+                                      
                                       userId: userId,
                                       audioUrl: messageData['audioUrl'],
                                     );
@@ -876,7 +874,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           }).catchError((error) {
                             print('Error fetching messages: $error');
                           });
-                        }, userId: userId, threadId: threadId, 
+                        },
                       );
                       // } else {
                       //   return MessageListItem(
@@ -899,16 +897,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class MessageListItem extends StatefulWidget {
   final String message;
-  final bool isFavorite;
+  // final bool isFavorite;
   final Function() onTap;
-  final String userId;
-  final String threadId;
 
   const MessageListItem(
       {required this.message,
-      required this.isFavorite,
+      // required this.isFavorite,
       Key? key,
-      required this.onTap, required this.userId, required this.threadId})
+      required this.onTap})
       : super(key: key);
 
   @override
@@ -921,53 +917,38 @@ class _MessageListItemState extends State<MessageListItem> {
   @override
   void initState() {
     super.initState();
-    isFavorite =  widget.isFavorite;
+    // isFavorite = widget.message['isFavorite'] ?? false;
   }
 
-  Future<void> _updateFavorite(bool favStatus) async {
-    print('Updating favorite thread status...');
+  Future<void> _updateFavorite(bool newFavoriteStatus) async {
+    print('Updating favorite status...');
     try {
       var response = await http.post(
-        Uri.parse('http://127.0.0.1:5000/update-favorite-thread'),
+        Uri.parse('http://127.0.0.1:5000/update-favorite'),
         body: jsonEncode({
-          'userId': widget.userId,  
-          'threadId': widget.threadId, 
-          'isFavorite': favStatus,
+          'message': widget.message,
+          'isFavorite': newFavoriteStatus,
         }),
         headers: {"Content-Type": "application/json"},
       );
 
       var data = json.decode(response.body);
-      print('Response from backend: $data');
+      // print('Response from backend: $data');
       if (data['success']) {
         setState(() {
-          isFavorite = favStatus;
+          isFavorite = newFavoriteStatus;
         });
-      } else {
-        print('Error updating favorite status: ${data['error']}');
       }
     } catch (e) {
       print('Error: $e');
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: widget.onTap,
       child: ListTile(
-        leading: IconButton(
-          icon:  Icon(
-          isFavorite ? Icons.favorite : Icons.favorite_border,
-          color: isFavorite ? Colors.red : Colors.grey,
-        ),
-          onPressed: (){
-            setState(() {
-           _updateFavorite(!isFavorite);
-          });
-          },
-        ),
         title: Text(widget.message),
       ),
     );
@@ -978,7 +959,7 @@ class Message {
   late String text;
   final String sender;
   final DateTime timestamp;
-  bool isFavorite;
+
   final String userId;
   String? audioUrl;
   String? threadId;
@@ -987,7 +968,7 @@ class Message {
       {required this.text,
       required this.sender,
       required this.timestamp,
-      this.isFavorite = false,
+  
       required this.userId,
       this.audioUrl,
       this.threadId});
@@ -997,7 +978,7 @@ class Message {
       'text': text,
       'sender': sender,
       'timestamp': timestamp.toIso8601String(),
-      'isFavorite': isFavorite,
+
       'userId': userId,
       'audioUrl': audioUrl,
       'threadId': threadId
@@ -1009,7 +990,7 @@ class Message {
       text: map['text'],
       sender: map['sender'],
       timestamp: DateTime.parse(map['timestamp'] ?? DateTime.now().toString()),
-      isFavorite: map['isFavorite'] ?? false,
+
       userId: map['userId'] ?? '',
       audioUrl: map['audioUrl'],
       threadId: map['threadId'],
