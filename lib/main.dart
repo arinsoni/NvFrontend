@@ -156,6 +156,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+ 
   void _sendMessage() async {
     if (isLoading) {
       return;
@@ -166,19 +167,41 @@ class _HomeScreenState extends State<HomeScreen> {
     if (messageText.isNotEmpty) {
       DateTime now = DateTime.now();
 
-      Message message = Message(
-        text: messageText,
-        sender: 'user',
-        timestamp: now,
-        userId: userId,
-        threadId: currentThreadId,
-      );
-
+      print("All messages ${messages}");
       setState(() {
-        messages.insert(0, message);
-        if (messages.isNotEmpty) {
-          isFirstMessageSent = true;
+        audioUrl = '';
+
+        if (originalMessage.isNotEmpty) {
+          int index = messages.indexWhere(
+              (m) => m.text == originalMessage && m.sender == 'user');
+
+          print("index $index");
+
+          if (index != -1) {
+            messages[index].text = messageText;
+            if (index - 1 >= 0 && messages[index - 1].sender == 'server') {
+              messages.removeAt(index - 1);
+            }
+          }
+         
+
+          originalMessage = "";
+        } else {
+          Message message = Message(
+            text: messageText,
+            sender: 'user',
+            timestamp: now,
+            userId: userId,
+            threadId: currentThreadId,
+          );
+          messages.insert(0, message);
+          if (messages.isNotEmpty) {
+            isFirstMessageSent = true;
+          }
+          _messageController.clear();
+          isLoading = true;
         }
+
         _messageController.clear();
         isLoading = true;
       });
@@ -202,12 +225,10 @@ class _HomeScreenState extends State<HomeScreen> {
       print("debug $matchingThread");
 
       if (matchingThread.isNotEmpty) {
-      
         print('Matching Thread Data: $matchingThread');
       } else {
-
         print('No matching thread data found.');
-        _fetchThreads();  
+        _fetchThreads();
       }
 
       setState(() {
@@ -216,7 +237,6 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     }
   }
-
 
   void mySendMessageFunction(String message) {
     _messageController.text = message;
@@ -897,7 +917,7 @@ class _MessageListItemState extends State<MessageListItem> {
 }
 
 class Message {
-  final String text;
+  late String text;
   final String sender;
   final DateTime timestamp;
   bool isFavorite;
