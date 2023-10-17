@@ -41,7 +41,7 @@ class MessageInput extends StatelessWidget {
                     CircularIconButton(
                       icon: Icons.add,
                       backgroundColor: const Color(0xFF7356E8),
-                      onPressed: () {},
+                      onPressed: onAddIconPressed,
                       height: 37,
                       width: 37,
                       iconSize: 20,

@@ -48,12 +48,56 @@ class _HomeScreenState extends State<HomeScreen> {
   late Color qColor = Colors.transparent;
   late Color mColor = Colors.transparent;
   bool isFavorite = false;
+  String currentThreadId = '';
+  String currentThreadName = '';
+
+  bool isNewThread = false;
 
   String userId = '';
   @override
   void initState() {
     super.initState();
-    _loadUserId();
+    _generateNewThreadId();
+    _loadUserId().then((_) {
+      _fetchThreads();
+    });
+  }
+
+  void _generateNewThreadId() {
+    var random = Random();
+    var values = List<int>.generate(12, (i) => random.nextInt(256));
+    currentThreadId = base64UrlEncode(values);
+  }
+
+  List<Map<String, dynamic>> threads = [];
+
+  Future<void> _fetchThreads() async {
+    print("fetching threads...");
+
+    var url = Uri.parse('http://127.0.0.1:5000/get_threads/$userId');
+    print("API URL: $url");
+    print("userID: $userId");
+
+    var response = await http.get(url);
+    if (response.statusCode == 200) {
+      print("API response status code: 200");
+
+      var data = json.decode(response.body) as List;
+      print("data fetched by fetchThreads: $data");
+
+      setState(() {
+        threads = data
+            .map((thread) => {
+                  'threadId': thread['threadId'],
+                  'threadName': thread['threadName']
+                })
+            .toList();
+
+        print("threads fetched: $threads");
+      });
+    } else {
+      print("API response status code: ${response.statusCode}");
+    }
   }
 
   Future<void> _loadUserId() async {
@@ -82,8 +126,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<Map<String, dynamic>> fetchResponseFromAPI(
-      String userInput, String userId, DateTime timestamp) async {
+  Future<Map<String, dynamic>> fetchResponseFromAPI(String userInput,
+      String userId, DateTime timestamp, bool isFirstMessageSent) async {
     try {
       final response = await http.post(
         Uri.parse('http://127.0.0.1:5000/process_query'),
@@ -94,6 +138,8 @@ class _HomeScreenState extends State<HomeScreen> {
           'user_input': userInput,
           'userId': userId,
           'timestamp': timestamp.toIso8601String(),
+          'threadId': currentThreadId,
+          'isFirstMessageSent': isFirstMessageSent,
         }),
       );
 
@@ -125,16 +171,20 @@ class _HomeScreenState extends State<HomeScreen> {
         sender: 'user',
         timestamp: now,
         userId: userId,
+        threadId: currentThreadId,
       );
 
       setState(() {
         messages.insert(0, message);
+        if (messages.isNotEmpty) {
+          isFirstMessageSent = true;
+        }
         _messageController.clear();
         isLoading = true;
       });
 
-      Map<String, dynamic> apiResponse =
-          await fetchResponseFromAPI(messageText, userId, now);
+      Map<String, dynamic> apiResponse = await fetchResponseFromAPI(
+          messageText, userId, now, isFirstMessageSent);
       now = DateTime.now();
 
       Message responseMessage = Message(
@@ -145,12 +195,28 @@ class _HomeScreenState extends State<HomeScreen> {
         audioUrl: apiResponse['audio_response'],
       );
 
+      final matchingThread = threads.firstWhere(
+        (thread) => thread['threadId'] == currentThreadId,
+        orElse: () => <String, dynamic>{},
+      );
+      print("debug $matchingThread");
+
+      if (matchingThread.isNotEmpty) {
+      
+        print('Matching Thread Data: $matchingThread');
+      } else {
+
+        print('No matching thread data found.');
+        _fetchThreads();  
+      }
+
       setState(() {
         messages.insert(0, responseMessage);
         isLoading = false;
       });
     }
   }
+
 
   void mySendMessageFunction(String message) {
     _messageController.text = message;
@@ -171,7 +237,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     Map<String, dynamic> apiResponse = await fetchResponseFromAPI(
-        messageToRefresh.text, messageToRefresh.userId, now);
+        messageToRefresh.text, messageToRefresh.userId, now, false);
 
     Message refreshedMessage = Message(
         text: apiResponse['text_response'],
@@ -222,10 +288,12 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Future<List<Map<String, dynamic>>> fetchMessages(String userId) async {
+  Future<List<Map<String, dynamic>>> fetchMessages(String userId,
+      [String? threadId]) async {
     if (userId != null) {
       print("UserId: $userId");
-      var url = Uri.parse('http://127.0.0.1:5000/get_messages/$userId');
+      var url =
+          Uri.parse('http://127.0.0.1:5000/get_messages/$userId/$threadId');
       print("URL: $url");
 
       try {
@@ -235,21 +303,13 @@ class _HomeScreenState extends State<HomeScreen> {
         if (response.statusCode == 200) {
           var data = json.decode(response.body);
 
-          if (data is List) {
-            return data.map((message) {
-              if (message is Map<String, dynamic>) {
-                print(message);
-                return message;
-              } else {
-                throw Exception('Data format is not as expected');
-              }
-            }).toList();
+          if (data is Map<String, dynamic> && data['messages'] is List) {
+            return List.from(data['messages']);
           } else {
-            throw Exception('Response data is not a list');
+            throw Exception('Response data is not in expected format');
           }
         } else {
-          throw Exception(
-              'Failed to load messages with status code getMsg ${response.statusCode}');
+          throw Exception('Failed to load messages from the server');
         }
       } catch (e) {
         throw Exception('Failed to make the API request for gteMsg: $e');
@@ -333,19 +393,22 @@ class _HomeScreenState extends State<HomeScreen> {
             builder: (context) => Padding(
               padding: const EdgeInsets.only(right: 8.0),
               child: IconButton(
-                  icon: SvgPicture.asset(
-                    'assets/svg/history.svg',
-                    width: 20.0,
-                    height: 20.0,
-                    colorFilter: const ColorFilter.mode(
-                      Color(0xFF4E4E4E),
-                      BlendMode.srcIn,
-                    ),
-                    semanticsLabel: 'A red up arrow',
+                icon: SvgPicture.asset(
+                  'assets/svg/history.svg',
+                  width: 20.0,
+                  height: 20.0,
+                  colorFilter: const ColorFilter.mode(
+                    Color(0xFF4E4E4E),
+                    BlendMode.srcIn,
                   ),
-                  onPressed: () => Scaffold.of(context).openEndDrawer()),
+                  semanticsLabel: 'A red up arrow',
+                ),
+                onPressed: () {
+                  Scaffold.of(context).openEndDrawer();
+                },
+              ),
             ),
-          ),
+          )
         ],
       ),
       body: Stack(
@@ -537,7 +600,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 MessageInput(
                   messageController: _messageController,
                   sendMessage: mySendMessageFunction,
-                  onAddIconPressed: () {},
+                  onAddIconPressed: () {
+                    print("Add button pressed");
+                    setState(() {
+                      _generateNewThreadId();
+                      print("New thread ID generated: $currentThreadId");
+                      print(threads);
+                      // threads.add(currentThreadId);
+                      print("Current threads: $threads");
+                      messages.clear();
+                    });
+                    print("State set");
+                  },
                   isLoading: isLoading,
                 ),
               ],
@@ -576,191 +650,202 @@ class _HomeScreenState extends State<HomeScreen> {
       return Center(child: CircularProgressIndicator());
     }
     print("1st come here ");
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: fetchMessages(userId),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        } else if (snapshot.hasError) {
-          return const Center(child: Text('Error loading messages '));
-        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(child: Text('No messages found'));
-        } else {
-          List<Map<String, dynamic>> userMessages =
-              snapshot.data!.map((message) {
-            if (message['timestamp'] != null) {
-              message['timestamp'] = DateTime.parse(message['timestamp']);
-            }
-            return message;
-          }).toList();
-
-          print("userMessages : $userMessages");
-
-          return Container(
-            margin: EdgeInsets.fromLTRB(
-                0, MediaQuery.of(context).padding.top, 0, 0),
-            child: Drawer(
-              child: AbsorbPointer(
-                absorbing: false,
-                child: Container(
-                  decoration: const BoxDecoration(
-                    border: Border(
-                      left: BorderSide(
-                        color: Color(0xFF7356E8),
-                        width: 3.0,
-                      ),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Container(
-                        child: Stack(
-                          alignment: Alignment.centerLeft,
-                          children: [
-                            Positioned(
-                              left: 0,
-                              top: 0,
-                              bottom: 0,
-                              child: Container(
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF7356E8),
-                                  borderRadius: BorderRadius.only(
-                                    bottomRight: Radius.circular(50),
-                                  ),
-                                ),
-                                width: 50,
-                                height: 50,
-                                child: Padding(
-                                  padding: const EdgeInsets.only(
-                                      right: 10.0, bottom: 10),
-                                  child: IconButton(
-                                    icon:
-                                        Icon(Icons.close, color: Colors.white),
-                                    onPressed: () =>
-                                        Navigator.of(context).pop(),
-                                    splashRadius: 1,
-                                    hoverColor: Colors.transparent,
-                                    splashColor: Colors.transparent,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.only(top: 15.0),
-                              child: Center(
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      'Chat History',
-                                      style: TextStyle(
-                                        color: Colors.black,
-                                        fontSize: 20,
-                                        fontFamily: 'Goldman',
-                                      ),
-                                    ),
-                                    Container(
-                                      margin: EdgeInsets.fromLTRB(50, 0, 30, 0),
-                                      child: Divider(
-                                        thickness: 1,
-                                        color: Color(0xFF878787),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: userMessages.length,
-                          itemBuilder: (context, index) {
-                            // DateTime messageTime = DateTime.parse(
-                            //     userMessages[index]['message']['timestamp']);
-
-                            // print("message Time: ${messageTime.day}");
-                            print("debugging time: ${userMessages[index]}");
-
-                            DateTime messageTime = DateTime.parse(
-                                userMessages[index]['message']['timestamp']
-                                    .toString());
-                            DateTime currentDate = DateTime.now();
-
-                            print(
-                                "Parsed message time: ${DateTime.parse(userMessages[index]['message']['timestamp'].toString()).day}");
-
-                            bool isToday = messageTime.day == currentDate.day &&
-                                messageTime.month == currentDate.month &&
-                                messageTime.year == currentDate.year;
-                            print("checking bool: $isToday");
-
-                            String timestampHeading = isToday
-                                ? 'Today'
-                                : DateFormat('MMMM yyyy').format(messageTime);
-
-                            if (index == 0 ||
-                                messageTime.day !=
-                                    DateTime.parse(userMessages[index]
-                                                ['message']['timestamp']
-                                            .toString())
-                                        .day ||
-                                messageTime.month !=
-                                    DateTime.parse(userMessages[index]
-                                                ['message']['timestamp']
-                                            .toString())
-                                        .month) {
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.fromLTRB(
-                                        16.0, 8.0, 0, 8.0),
-                                    child: Text(
-                                      timestampHeading,
-                                      style: TextStyle(
-                                        color: Colors.grey,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ),
-                                  MessageListItem(
-                                    message: userMessages[index]['message'],
-                                    isFavorite: userMessages[index]
-                                            ['favorite'] ??
-                                        false,
-                                  ),
-                                ],
-                              );
-                            } else {
-                              return MessageListItem(
-                                message: userMessages[index]['message'],
-                                isFavorite:
-                                    userMessages[index]['favorite'] ?? false,
-                              );
-                            }
-                          },
-                        ),
-                      )
-                    ],
-                  ),
+    return Container(
+      margin: EdgeInsets.fromLTRB(0, MediaQuery.of(context).padding.top, 0, 0),
+      child: Drawer(
+        child: AbsorbPointer(
+          absorbing: false,
+          child: Container(
+            decoration: const BoxDecoration(
+              border: Border(
+                left: BorderSide(
+                  color: Color(0xFF7356E8),
+                  width: 3.0,
                 ),
               ),
             ),
-          );
-        }
-      },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  child: Stack(
+                    alignment: Alignment.centerLeft,
+                    children: [
+                      Positioned(
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF7356E8),
+                            borderRadius: BorderRadius.only(
+                              bottomRight: Radius.circular(50),
+                            ),
+                          ),
+                          width: 50,
+                          height: 50,
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.only(right: 10.0, bottom: 10),
+                            child: IconButton(
+                              icon: Icon(Icons.close, color: Colors.white),
+                              onPressed: () => Navigator.of(context).pop(),
+                              splashRadius: 1,
+                              hoverColor: Colors.transparent,
+                              splashColor: Colors.transparent,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 15.0),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              Text(
+                                'Chat History',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 20,
+                                  fontFamily: 'Goldman',
+                                ),
+                              ),
+                              Container(
+                                margin: EdgeInsets.fromLTRB(50, 0, 30, 0),
+                                child: Divider(
+                                  thickness: 1,
+                                  color: Color(0xFF878787),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: threads.length,
+                    itemBuilder: (context, index) {
+                      print("lisdt view $threads");
+                      var threadId = threads[index]['threadId'];
+                      var threadName = threads[index]['threadName'];
+                      print(
+                          "threadId = $threadId and threadName = $threadName");
+
+                      // print("debugging time: ${userMessages[index]}");
+
+                      // DateTime messageTime = DateTime.parse(
+                      //     userMessages[index]['message']['timestamp']
+                      //         .toString());
+                      // DateTime currentDate = DateTime.now();
+
+                      // print(
+                      //     "Parsed message time: ${DateTime.parse(userMessages[index]['message']['timestamp'].toString()).day}");
+
+                      // bool isToday = messageTime.day == currentDate.day &&
+                      //     messageTime.month == currentDate.month &&
+                      //     messageTime.year == currentDate.year;
+                      // print("checking bool: $isToday");
+
+                      // String timestampHeading = isToday
+                      //     ? 'Today'
+                      //     : DateFormat('MMMM yyyy').format(messageTime);
+
+                      // if (index == 0 ||
+                      //     messageTime.day !=
+                      //         DateTime.parse(userMessages[index]
+                      //                     ['message']['timestamp']
+                      //                 .toString())
+                      //             .day ||
+                      //     messageTime.month !=
+                      //         DateTime.parse(userMessages[index]
+                      //                     ['message']['timestamp']
+                      //                 .toString())
+                      //             .month) {
+
+                      return MessageListItem(
+                        message: threadName,
+                        // isFavorite:
+                        //     false, // Replace with actual favorite status
+                        onTap: () {
+                          setState(() {
+                            currentThreadId = threadId;
+                            currentThreadName = threadName;
+                            messages.clear();
+                          });
+
+                          fetchMessages(userId, threadId)
+                              .then((fetchedMessages) {
+                            setState(() {
+                              messages.addAll(fetchedMessages
+                                  .map((messageData) {
+                                    Message inputMessage = Message(
+                                      text: messageData['input'],
+                                      sender: 'user',
+                                      timestamp: DateTime.parse(
+                                          messageData['timestamp']),
+                                      isFavorite: messageData['isFavorite'],
+                                      userId: userId,
+                                    );
+
+                                    Message outputMessage = Message(
+                                      text: messageData['output'],
+                                      sender: 'server',
+                                      timestamp: DateTime.parse(
+                                          messageData['timestamp']),
+                                      isFavorite: messageData['isFavorite'],
+                                      userId: userId,
+                                      audioUrl: messageData['audioUrl'],
+                                    );
+
+                                    return [
+                                      inputMessage,
+                                      outputMessage,
+                                    ];
+                                  })
+                                  .expand((pair) => pair)
+                                  .toList()
+                                  .reversed);
+                              print(
+                                  "Messages after adding fetched messages: ${messages}");
+                              Navigator.of(context).pop();
+                            });
+                          }).catchError((error) {
+                            print('Error fetching messages: $error');
+                          });
+                        },
+                      );
+                      // } else {
+                      //   return MessageListItem(
+                      //     message: userMessages[index]['message'],
+                      //     isFavorite:
+                      //         userMessages[index]['favorite'] ?? false,
+                      //   );
+                      // }
+                    },
+                  ),
+                )
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
 
 class MessageListItem extends StatefulWidget {
-  final Map<String, dynamic> message;
-  final bool isFavorite;
+  final String message;
+  // final bool isFavorite;
+  final Function() onTap;
 
   const MessageListItem(
-      {required this.message, required this.isFavorite, Key? key})
+      {required this.message,
+      // required this.isFavorite,
+      Key? key,
+      required this.onTap})
       : super(key: key);
 
   @override
@@ -773,7 +858,7 @@ class _MessageListItemState extends State<MessageListItem> {
   @override
   void initState() {
     super.initState();
-    isFavorite = widget.message['isFavorite'] ?? false;
+    // isFavorite = widget.message['isFavorite'] ?? false;
   }
 
   Future<void> _updateFavorite(bool newFavoriteStatus) async {
@@ -802,20 +887,15 @@ class _MessageListItemState extends State<MessageListItem> {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: GestureDetector(
-        onTap: () => _updateFavorite(!isFavorite),
-        child: Icon(
-          isFavorite ? Icons.favorite : Icons.favorite_border,
-          color: isFavorite ? Colors.red : Colors.grey,
-        ),
+    return InkWell(
+      onTap: widget.onTap,
+      child: ListTile(
+        title: Text(widget.message),
       ),
-      title: Text(widget.message['input']),
     );
   }
 }
 
-// message.dart
 class Message {
   final String text;
   final String sender;
@@ -823,15 +903,16 @@ class Message {
   bool isFavorite;
   final String userId;
   String? audioUrl;
+  String? threadId;
 
-  Message({
-    required this.text,
-    required this.sender,
-    required this.timestamp,
-    this.isFavorite = false,
-    required this.userId,
-    this.audioUrl,
-  });
+  Message(
+      {required this.text,
+      required this.sender,
+      required this.timestamp,
+      this.isFavorite = false,
+      required this.userId,
+      this.audioUrl,
+      this.threadId});
 
   Map<String, dynamic> toMap() {
     return {
@@ -841,6 +922,7 @@ class Message {
       'isFavorite': isFavorite,
       'userId': userId,
       'audioUrl': audioUrl,
+      'threadId': threadId
     };
   }
 
@@ -848,10 +930,11 @@ class Message {
     return Message(
       text: map['text'],
       sender: map['sender'],
-      timestamp: DateTime.parse(map['timestamp']),
+      timestamp: DateTime.parse(map['timestamp'] ?? DateTime.now().toString()),
       isFavorite: map['isFavorite'] ?? false,
-      userId: map['userId'],
+      userId: map['userId'] ?? '',
       audioUrl: map['audioUrl'],
+      threadId: map['threadId'],
     );
   }
 }

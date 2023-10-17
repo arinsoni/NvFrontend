@@ -10,16 +10,16 @@ class MessageContainer extends StatelessWidget {
   final Function(String) onEdit;
   final bool isLoading;
   final Function(int) onRefresh;
-   final Message message;
-final int index;
-
-
+  final Message message;
+  final int index;
 
   const MessageContainer(
       {Key? key,
       required this.message,
       required this.onEdit,
-      required this.isLoading,  required this.index, required this.onRefresh})
+      required this.isLoading,
+      required this.index,
+      required this.onRefresh})
       : super(key: key);
 
   @override
@@ -28,7 +28,7 @@ final int index;
       print("Showing loading indicator...");
       return _buildLoadingIndicator();
     } else {
-      print("check : $isLoading");
+      // print("check : $isLoading");
       final isUserMessage = message.sender == 'user';
       double screenWidth = MediaQuery.of(context).size.width;
       double maxWidth = isUserMessage ? screenWidth * 0.8 : screenWidth * 0.8;
@@ -55,11 +55,9 @@ final int index;
                           width: 20,
                         ),
                         onPressed: () {
-                          
-                            if (isUserMessage) {
-                              onEdit(message.text);
-                            }
-                        
+                          if (isUserMessage) {
+                            onEdit(message.text);
+                          }
                         },
                       ),
                     ),
@@ -111,25 +109,24 @@ final int index;
             ),
           ),
           Padding(
-  padding:  EdgeInsets.only(left: 8, bottom: 8.0),
-  child: !isUserMessage
-      ? CircularIconButton(
-          icon: Icons.refresh,
-          backgroundColor: const Color(0xFFEBEBEB),
-          onPressed: () {
-            onRefresh!(index);  
-          },
-          height: 30,
-          width: 30,
-          iconSize: 20,
-          iconColor: const Color(0xFF9B9B9B),
-        )
-      : const SizedBox(
-          height: 0,
-          width: 0,
-        ),
-),
-
+            padding: EdgeInsets.only(left: 8, bottom: 8.0),
+            child: !isUserMessage
+                ? CircularIconButton(
+                    icon: Icons.refresh,
+                    backgroundColor: const Color(0xFFEBEBEB),
+                    onPressed: () {
+                      onRefresh!(index);
+                    },
+                    height: 30,
+                    width: 30,
+                    iconSize: 20,
+                    iconColor: const Color(0xFF9B9B9B),
+                  )
+                : const SizedBox(
+                    height: 0,
+                    width: 0,
+                  ),
+          ),
         ],
       );
     }
@@ -137,8 +134,8 @@ final int index;
 
   Widget _buildLoadingIndicator() {
     return const Padding(
-      padding:  EdgeInsets.all(10.0),
-      child:  Row(
+      padding: EdgeInsets.all(10.0),
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           SpinKitWave(
@@ -148,11 +145,11 @@ final int index;
           SizedBox(width: 10),
           Text(
             'Typing...',
-            style: TextStyle(fontStyle: FontStyle.italic, fontSize: 20,
-            color: Color(0xFF9999999E)
-            ),
+            style: TextStyle(
+                fontStyle: FontStyle.italic,
+                fontSize: 20,
+                color: Color(0xFF9999999E)),
           ),
-          
         ],
       ),
     );
