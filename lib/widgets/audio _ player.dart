@@ -51,35 +51,28 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
       padding: const EdgeInsets.only(top: 10.0, left: 10, right: 10),
       child: Row(
         children: [
-          Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Color(0xFFFFFFFF),
-            ),
-            child: Center(
-              child: StreamBuilder<bool>(
-                stream: _audioPlayer.playingStream,
-                builder: (context, snapshot) {
-                  bool? isCurrentlyPlaying = snapshot.data;
-                  if (isCurrentlyPlaying != null) {
-                    isPlaying = isCurrentlyPlaying;
-                  }
+          Center(
+            child: StreamBuilder<bool>(
+              stream: _audioPlayer.playingStream,
+              builder: (context, snapshot) {
+                bool? isCurrentlyPlaying = snapshot.data;
+                if (isCurrentlyPlaying != null) {
+                  isPlaying = isCurrentlyPlaying;
+                }
 
-                  return IconButton(
-                    icon: Icon(isPlaying ? Icons.pause : Icons.play_arrow),
-                    onPressed: () {
-                      if (isPlaying) {
-                        _audioPlayer.pause();
-                      } else {
-                        _audioPlayer.play();
-                      }
-                    },
-                    padding: EdgeInsets.zero,
-                  );
-                },
-              ),
+                return IconButton(
+                  icon: Icon(isPlaying ? Icons.pause : Icons.play_arrow, color: Color(0xFF4968FF),),
+                  iconSize: 30, 
+                  onPressed: () {
+                    if (isPlaying) {
+                      _audioPlayer.pause();
+                    } else {
+                      _audioPlayer.play();
+                    }
+                  },
+                  padding: EdgeInsets.zero,
+                );
+              },
             ),
           ),
           StreamBuilder<Duration>(

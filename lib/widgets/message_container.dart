@@ -45,21 +45,23 @@ class MessageContainer extends StatelessWidget {
                     height: 30,
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Color(0xFFEBEBEB),
+                      color: Colors.white,
                     ),
                     child: Center(
-                      child: IconButton(
-                        icon: Image.asset(
-                          'assets/images/edit.png',
-                          height: 20,
-                          width: 20,
-                        ),
-                        onPressed: () {
-                          if (isUserMessage) {
+
+                        child: GestureDetector(
+                      onTap:  () {
+                              if (isUserMessage) {
                             onEdit(message.text);
                           }
-                        },
+                            },
+                      child: Image.asset(
+                        'assets/images/edit.png',
+                        width: 20.0,
+                        height: 20.0,
                       ),
+                    ),
+                     
                     ),
                   )
                 : Container(
@@ -76,8 +78,16 @@ class MessageContainer extends StatelessWidget {
               ),
               decoration: BoxDecoration(
                 color: isUserMessage
-                    ? const Color(0xFF7356E8)
-                    : const Color(0xFFDFDFF4),
+                    ? const Color(0xFF6983FF)
+                    : const Color(0xFFFFFFFF),
+                boxShadow:  [
+                  BoxShadow(
+                    color: const Color.fromRGBO(0, 0, 0, 0.25), 
+                    offset: isUserMessage ?  Offset(0, 4) : Offset(5, 5), 
+                    blurRadius: isUserMessage ?  4.0 : 10,
+                    spreadRadius: 0.0, 
+                  ),
+                ],
                 borderRadius: BorderRadius.only(
                   topRight: const Radius.circular(25),
                   topLeft: isUserMessage
@@ -113,14 +123,14 @@ class MessageContainer extends StatelessWidget {
             child: !isUserMessage
                 ? CircularIconButton(
                     icon: Icons.refresh,
-                    backgroundColor: const Color(0xFFEBEBEB),
+                    backgroundColor: const Color(0xFF4968FF),
                     onPressed: () {
-                      onRefresh!(index);
+                      onRefresh(index);
                     },
                     height: 30,
                     width: 30,
                     iconSize: 20,
-                    iconColor: const Color(0xFF9B9B9B),
+                    iconColor:  Colors.white,
                   )
                 : const SizedBox(
                     height: 0,

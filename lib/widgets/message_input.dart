@@ -21,26 +21,17 @@ class MessageInput extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(color: Colors.white),
       child: Stack(
         children: [
           Container(
             padding: const EdgeInsets.only(left: 8.0, right: 8, top: 8),
-            decoration: const BoxDecoration(
-              border: Border(
-                top: BorderSide(
-                  color: Colors.grey,
-                  width: 0.5,
-                ),
-              ),
-            ),
             child: Column(
               children: [
                 Row(
                   children: <Widget>[
                     CircularIconButton(
                       icon: Icons.add,
-                      backgroundColor: const Color(0xFF7356E8),
+                      backgroundColor: const Color(0xFFAB0505),
                       onPressed: onAddIconPressed,
                       height: 37,
                       width: 37,
@@ -52,9 +43,9 @@ class MessageInput extends StatelessWidget {
                         padding: const EdgeInsets.only(left: 15.0, right: 15),
                         child: Container(
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(15.0),
-                            color: Colors.transparent,
-                            border: Border.all(color: const Color(0x62000000)),
+                            borderRadius: BorderRadius.circular(25.0),
+                            color: const Color(0xFFFFFFFF),
+                            border: Border.all(color: const Color(0xffF0F0F0)),
                           ),
                           constraints: const BoxConstraints(
                             maxHeight: 100.0,
@@ -67,7 +58,11 @@ class MessageInput extends StatelessWidget {
                                   TextField(
                                     controller: messageController,
                                     decoration: const InputDecoration(
-                                      hintText: 'Ask a question',
+                                      hintText: 'Message',
+                                      hintStyle: TextStyle(
+                                        color:
+                                            Color(0xFFCCD5FF), // Set color here
+                                      ),
                                       contentPadding: EdgeInsets.only(
                                           left: 16.0, right: 48.0),
                                       border: InputBorder.none,
@@ -98,22 +93,17 @@ class MessageInput extends StatelessWidget {
                         ),
                       ),
                     ),
-                    IconButton(
-                      icon: SvgPicture.asset(
-                        'assets/svg/send.svg',
-                        width: 20.0,
-                        height: 20.0,
-                        colorFilter: const ColorFilter.mode(
-                          Color(0xFF7356E8),
-                          BlendMode.srcIn,
-                        ),
-                        semanticsLabel: 'A red up arrow',
-                      ),
-                      onPressed: isLoading
+                    GestureDetector(
+                      onTap: isLoading
                           ? null
                           : () {
                               sendMessage(messageController.text);
                             },
+                      child: Image.asset(
+                        'assets/images/send.png',
+                        width: 37.0,
+                        height: 37.0,
+                      ),
                     ),
                   ],
                 ),

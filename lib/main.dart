@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:intl/intl.dart';
 import 'package:nvsirai/widgets/message_container.dart';
@@ -10,7 +11,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
-void main() {
+void main() async {
   runApp(const NVSirAI());
 }
 
@@ -45,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String audioUrl = "";
   bool isLoading = false;
   bool isFirstMessageSent = false;
-  late Color qColor = Colors.transparent;
+  late Color qColor = Color.fromARGB(255, 248, 208, 134).withOpacity(1);
   late Color mColor = Colors.transparent;
   bool isFavorite = false;
   String currentThreadId = '';
@@ -74,7 +75,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _fetchThreads() async {
     print("fetching threads...");
 
-    var url = Uri.parse('http://127.0.0.1:5000/get_threads/$userId');
+    var url = Uri.parse(
+        'https://nvsirai-105bc2039f5f.herokuapp.com/get_threads/$userId');
     print("API URL: $url");
     print("userID: $userId");
 
@@ -94,8 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   return {
                     'threadId': thread['threadId'] as String,
                     'threadName': thread['threadName'] as String,
-                     'isFavorite': thread['isFavorite'] as bool,
-                   
+                    'isFavorite': thread['isFavorite'] as bool,
                   };
                 } else {
                   return null;
@@ -115,40 +116,40 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-    Future<bool> deleteThread(userId, threadId) async {
-  try {
-    print("mi gai $threadId");
-    var response = await http.post(
-      Uri.parse('http://127.0.0.1:5000/delete_thread'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'userId': userId, 'threadId': threadId}),
-    );
+  Future<bool> deleteThread(userId, threadId) async {
+    try {
+      print("mi gai $threadId");
+      var response = await http.post(
+        Uri.parse('https://nvsirai-105bc2039f5f.herokuapp.com/delete_thread'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'userId': userId, 'threadId': threadId}),
+      );
 
-    if (response.statusCode == 200) {
-      return true;
-    } else {
-      print('Failed to delete thread: ${response.body}');
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        print('Failed to delete thread: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('Error occurred while deleting thread: $e');
       return false;
     }
-  } catch (e) {
-    print('Error occurred while deleting thread: $e');
-    return false;
   }
-}
 
-void _deleteThread(String threadId) async {
-  bool isDeleted = await deleteThread(userId, threadId);
-  
-  if (isDeleted) {
-    setState(() {
-      threads.removeWhere((thread) => thread['threadId'] == threadId);
-      Navigator.of(context).pop();
-    });
-    print('Thread deleted successfully');
-  } else {
-    print('Failed to delete the thread');
+  void _deleteThread(String threadId) async {
+    bool isDeleted = await deleteThread(userId, threadId);
+
+    if (isDeleted) {
+      setState(() {
+        threads.removeWhere((thread) => thread['threadId'] == threadId);
+        Navigator.of(context).pop();
+      });
+      print('Thread deleted successfully');
+    } else {
+      print('Failed to delete the thread');
+    }
   }
-}
 
   Future<void> _loadUserId() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -166,7 +167,7 @@ void _deleteThread(String threadId) async {
 
   Future<void> deleteAllAudioFiles() async {
     final response = await http.delete(
-      Uri.parse('http://127.0.0.1:5000/delete-audios'),
+      Uri.parse('https://nvsirai-105bc2039f5f.herokuapp.com/delete-audios'),
     );
 
     if (response.statusCode == 200) {
@@ -180,7 +181,7 @@ void _deleteThread(String threadId) async {
       String userId, DateTime timestamp, bool isFirstMessageSent) async {
     try {
       final response = await http.post(
-        Uri.parse('http://127.0.0.1:5000/process_query'),
+        Uri.parse('https://nvsirai-105bc2039f5f.herokuapp.com/process_query'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -289,27 +290,26 @@ void _deleteThread(String threadId) async {
   }
 
   Future<void> deleteMessage(String userId, String threadId, int index) async {
-
     // }
     try {
-    var response = await http.post(
-      Uri.parse('http://127.0.0.1:5000/delete_message'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'userId': userId,
-        'threadId': threadId,
-        'index': index,
-      }),
-    );
+      var response = await http.post(
+        Uri.parse('https://nvsirai-105bc2039f5f.herokuapp.com/delete_message'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'userId': userId,
+          'threadId': threadId,
+          'index': index,
+        }),
+      );
 
-    if (response.statusCode == 200) {
-      print('Message deleted successfully');
-    } else {
-      print('Failed to delete message: ${response.body}');
+      if (response.statusCode == 200) {
+        print('Message deleted successfully');
+      } else {
+        print('Failed to delete message: ${response.body}');
+      }
+    } catch (e) {
+      print('Error occurred while deleting message: $e');
     }
-  } catch (e) {
-    print('Error occurred while deleting message: $e');
-  }
   }
 
   void mySendMessageFunction(String message) {
@@ -371,14 +371,16 @@ void _deleteThread(String threadId) async {
 
   void _isQuestion() {
     setState(() {
-      qColor = Color(0xFFDFDFF4);
+      print("callled");
+      qColor = Color.fromARGB(255, 248, 208, 134).withOpacity(1);
       mColor = Colors.transparent;
     });
   }
 
   void _isMotivation() {
     setState(() {
-      mColor = Color(0xFFDFDFF4);
+      print("callled");
+      mColor = Color(0xFFFFBCD4).withOpacity(1);
       qColor = Colors.transparent;
     });
   }
@@ -387,8 +389,8 @@ void _deleteThread(String threadId) async {
       [String? threadId]) async {
     if (userId != null) {
       print("UserId: $userId");
-      var url =
-          Uri.parse('http://127.0.0.1:5000/get_messages/$userId/$threadId');
+      var url = Uri.parse(
+          'https://nvsirai-105bc2039f5f.herokuapp.com/get_messages/$userId/$threadId');
       print("URL: $url");
 
       try {
@@ -428,56 +430,45 @@ void _deleteThread(String threadId) async {
       endDrawer: _buildHistoryDrawer(),
 
       appBar: AppBar(
+        shadowColor: Colors.transparent,
         backgroundColor: Colors.white,
         leading: IconButton(
-          icon: const Icon(
-            Icons.chevron_left_rounded,
-            color: Color(0xFF4E4E4E),
-            size: 40,
+          icon: Image.asset(
+            'assets/images/back.png',
+            height: 20,
+            width: 20,
           ),
           onPressed: () {},
         ),
         title: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SvgPicture.asset(
-              'assets/svg/logo.svg',
-              width: 45.0,
-              height: 45.0,
+            Image.asset(
+              'assets/images/nvsir.png',
+              width: 30.0,
+              height: 30.0,
             ),
             const SizedBox(width: 8),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'NV.AI',
+                  'Hello',
                   style: TextStyle(
-                    fontSize: 20,
-                    fontFamily: 'Goldman',
-                    color: Color(0xFF7356E8),
+                    fontSize: 15,
+                    fontFamily: 'SourceCodePro',
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xFF6F6F6F),
                   ),
                 ),
-                Row(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(right: 4.0),
-                      child: Container(
-                          width: 8.0,
-                          height: 8.0,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.green,
-                          )),
-                    ),
-                    const Text(
-                      'Online',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontFamily: 'Montserrat',
-                        color: Colors.black,
-                      ),
-                    ),
-                  ],
+                const Text(
+                  'Student',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontFamily: 'SourceCodePro',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF595959),
+                  ),
                 ),
               ],
             ),
@@ -486,21 +477,53 @@ void _deleteThread(String threadId) async {
         actions: [
           Builder(
             builder: (context) => Padding(
-              padding: const EdgeInsets.only(right: 8.0),
-              child: IconButton(
-                icon: SvgPicture.asset(
-                  'assets/svg/history.svg',
-                  width: 20.0,
-                  height: 20.0,
-                  colorFilter: const ColorFilter.mode(
-                    Color(0xFF4E4E4E),
-                    BlendMode.srcIn,
+              padding: const EdgeInsets.only(right: 5.0),
+              child: Container(
+                margin: EdgeInsets.only(top: 10, bottom: 10),
+                padding: EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                    borderRadius: BorderRadius.all(Radius.circular(8)),
+                    border: Border.all(
+                        width: 1.2,
+                        color: Color(0xFFE1D6FF).withOpacity(0.45))),
+                child: GestureDetector(
+                  onTap: () {
+                    Scaffold.of(context).openEndDrawer();
+                  },
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: SvgPicture.asset(
+                          'assets/svg/history.svg',
+                          width: 12.0,
+                          height: 14.0,
+                          colorFilter: const ColorFilter.mode(
+                            Color(0xFF4E4E4E),
+                            BlendMode.srcIn,
+                          ),
+                          semanticsLabel: 'A red up arrow',
+                        ),
+                        onPressed: () {
+                          Scaffold.of(context).openEndDrawer();
+                        },
+                        splashColor: Colors.transparent,
+                        hoverColor: Colors.transparent,
+                      ),
+                      const Text(
+                        "History",
+                        style: TextStyle(
+                          color: Color(0xFF2D2D2D),
+                          fontFamily: 'SourceCodePro',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                      SizedBox(
+                        width: 10,
+                      ),
+                    ],
                   ),
-                  semanticsLabel: 'A red up arrow',
                 ),
-                onPressed: () {
-                  Scaffold.of(context).openEndDrawer();
-                },
               ),
             ),
           )
@@ -509,152 +532,222 @@ void _deleteThread(String threadId) async {
       body: Stack(
         children: [
           Container(
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage('assets/images/bg.jpg'),
-                fit: BoxFit.fill,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.white,
+                    Color(0xFFEBEEFD),
+                  ],
+                ),
               ),
             ),
           ),
           if (!isFirstMessageSent)
             SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.only(top: 50.0),
+                padding: const EdgeInsets.only(top: 20.0),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Center(
-                          child: SvgPicture.asset(
-                            'assets/svg/logo_bg.svg',
-                            width: 0.7 * screenWidth,
-                            height: 0.4 * screenHeight,
-                            key: imageKey,
-                          ),
-                        ),
-                        Center(
-                          child: SvgPicture.asset(
-                            'assets/svg/logo_bg.svg',
-                            width: 0.7 * screenWidth,
-                            height: 0.4 * screenHeight,
-                          ),
-                        ),
-                        Center(
-                          child: SvgPicture.asset(
-                            'assets/svg/NV.AI.svg',
-                            width: 0.4 * screenWidth,
-                            height: 0.06 * screenHeight,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(
-                      height: 20,
-                    ),
-                    IntrinsicWidth(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: Color(0xFFDFDFF4),
-                            width: 4.0,
-                          ),
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                margin: EdgeInsets.symmetric(horizontal: 10.0),
-                                child: ElevatedButton(
-                                  style: ButtonStyle(
-                                    backgroundColor:
-                                        MaterialStateProperty.all(qColor),
-                                    elevation: MaterialStateProperty.all(0),
-                                    overlayColor: MaterialStateProperty
-                                        .resolveWith<Color?>(
-                                            (Set<MaterialState> states) {
-                                      if (states
-                                          .contains(MaterialState.pressed))
-                                        return Colors.transparent;
-                                      return null;
-                                    }),
-                                    minimumSize:
-                                        MaterialStateProperty.all(Size(10, 40)),
-                                    maximumSize: MaterialStateProperty.all(
-                                        Size(200, 40)),
+                    Center(
+                      child: IntrinsicWidth(
+                        child: Container(
+                          child: Padding(
+                            padding: const EdgeInsets.all(4.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(5),
+                                    border: Border.all(
+                                      width: 3,
+                                      color: qColor,
+                                    ),
                                   ),
-                                  onPressed: () {
-                                    _isQuestion();
-                                  },
-                                  child: Text(
-                                    'Questions',
-                                    style: TextStyle(
-                                        color: Color(0xFF4E4E4E),
-                                        fontSize: (0.045 * screenWidth)
-                                            .clamp(12, 24)
-                                            .toDouble(),
-                                        fontFamily: 'Montserrat',
-                                        fontWeight: FontWeight.w600),
-                                  ),
-                                ),
-                              ),
-                              Container(
-                                margin: EdgeInsets.symmetric(horizontal: 10.0),
-                                child: ElevatedButton(
-                                  style: ButtonStyle(
-                                    backgroundColor:
-                                        MaterialStateProperty.all(mColor),
-                                    elevation: MaterialStateProperty.all(0),
-                                    overlayColor: MaterialStateProperty
-                                        .resolveWith<Color?>(
-                                            (Set<MaterialState> states) {
-                                      if (states
-                                          .contains(MaterialState.pressed))
-                                        return Colors.transparent;
-                                      return null;
-                                    }),
-                                    minimumSize:
-                                        MaterialStateProperty.all(Size(10, 40)),
-                                    maximumSize: MaterialStateProperty.all(
-                                        Size(200, 40)),
-                                  ),
-                                  onPressed: () {
-                                    _isMotivation();
-                                  },
-                                  child: Text(
-                                    'Motivation',
-                                    style: TextStyle(
-                                        color: Color(0xFF4E4E4E),
-                                        fontSize: (0.045 * screenWidth)
-                                            .clamp(12, 24)
-                                            .toDouble(),
-                                        fontFamily: 'Montserrat',
-                                        fontWeight: FontWeight.bold),
+                                  child: Container(
+                                    margin: EdgeInsets.all(3),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                          width: 1.2,
+                                          color: Color(0xFFE1D6FF)
+                                              .withOpacity(0.45)),
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          Color(0xFFFFF9EE),
+                                          Color(0xFFFFEFD0)
+                                        ],
+                                        stops: [0.0, 1.0],
+                                        end: Alignment.centerLeft,
+                                        begin: Alignment.centerRight,
+                                      ),
+                                      borderRadius: BorderRadius.circular(5),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        ElevatedButton(
+                                          style: ButtonStyle(
+                                            backgroundColor:
+                                                MaterialStateProperty.all(
+                                                    Colors.transparent),
+                                            elevation:
+                                                MaterialStateProperty.all(0),
+                                            overlayColor: MaterialStateProperty
+                                                .resolveWith<Color?>(
+                                                    (Set<MaterialState>
+                                                        states) {
+                                              if (states.contains(
+                                                  MaterialState.pressed))
+                                                return Colors.transparent;
+                                              return null;
+                                            }),
+                                            minimumSize:
+                                                MaterialStateProperty.all(
+                                                    Size(10, 40)),
+                                            maximumSize:
+                                                MaterialStateProperty.all(
+                                                    Size(200, 40)),
+                                          ),
+                                          onPressed: () {
+                                            _isQuestion();
+                                          },
+                                          child: Text(
+                                            'Questions',
+                                            style: TextStyle(
+                                                color: Color(0xFF4E4E4E),
+                                                fontSize: (0.025 * screenWidth)
+                                                    .clamp(12, 24)
+                                                    .toDouble(),
+                                                fontFamily: 'Montserrat',
+                                                fontWeight: FontWeight.w600),
+                                          ),
+                                        ),
+                                        Image.asset(
+                                          'assets/images/atom.png',
+                                          width: 18,
+                                          height: 18,
+                                          color: Color.fromARGB(
+                                              255, 247, 211, 143),
+                                        ),
+                                        SizedBox(
+                                          width: 10,
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                                Flexible(
+                                    child: SizedBox(
+                                  width: 20,
+                                )),
+                                GestureDetector(
+                                  onTap: () => {
+                                    setState(() {
+                                      print("callled");
+                                      mColor = Color(0xFFFFBCD4).withOpacity(1);
+                                      qColor = Colors.transparent;
+                                    })
+                                  },
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(5),
+                                      border:
+                                          Border.all(width: 3, color: mColor),
+                                    ),
+                                    child: Container(
+                                      margin: EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            Color(0xFFFFBCD4), // #FFBCD4
+                                            Color(0xFFFFF3F8), // #FFF3F8
+                                          ],
+                                          stops: [
+                                            0,
+                                            1,
+                                          ],
+                                          begin: Alignment.centerLeft,
+                                          end: Alignment.centerRight,
+                                        ),
+                                        borderRadius: BorderRadius.circular(5),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          ElevatedButton(
+                                            style: ButtonStyle(
+                                              backgroundColor:
+                                                  MaterialStateProperty.all(
+                                                      Colors.transparent),
+                                              elevation:
+                                                  MaterialStateProperty.all(0),
+                                              overlayColor:
+                                                  MaterialStateProperty
+                                                      .resolveWith<Color?>((Set<
+                                                              MaterialState>
+                                                          states) {
+                                                if (states.contains(
+                                                    MaterialState.pressed))
+                                                  return Colors.transparent;
+                                                return null;
+                                              }),
+                                              minimumSize:
+                                                  MaterialStateProperty.all(
+                                                      Size(10, 40)),
+                                              maximumSize:
+                                                  MaterialStateProperty.all(
+                                                      Size(200, 40)),
+                                            ),
+                                            onPressed: () {
+                                              _isMotivation();
+                                            },
+                                            child: Text(
+                                              'Motivation',
+                                              style: TextStyle(
+                                                  color: Color(0xFF4E4E4E),
+                                                  fontSize:
+                                                      (0.025 * screenWidth)
+                                                          .clamp(12, 24)
+                                                          .toDouble(),
+                                                  fontFamily: 'Montserrat',
+                                                  fontWeight: FontWeight.w600),
+                                            ),
+                                          ),
+                                          Image.asset(
+                                            'assets/images/motivation.png',
+                                            width: 20,
+                                            height: 20,
+                                            color: Color(0xFFFEB1CD),
+                                          ),
+                                          SizedBox(
+                                            width: 10,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                    Padding(
-                      padding: EdgeInsets.only(
-                          right: screenWidth * 0.1,
-                          top: 10,
-                          left: 0.1 * screenWidth),
-                      child: Text(
-                        desc,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Color(0xFF878787),
-                        ),
-                      ),
-                    ),
+                    // Padding(
+                    //   padding: EdgeInsets.only(
+                    //       right: screenWidth * 0.1,
+                    //       top: 10,
+                    //       left: 0.1 * screenWidth),
+                    //   child: Text(
+                    //     desc,
+                    //     textAlign: TextAlign.center,
+                    //     style: const TextStyle(
+                    //       color: Color(0xFF878787),
+                    //     ),
+                    //   ),
+                    // ),
                   ],
                 ),
               ),
@@ -826,7 +919,7 @@ void _deleteThread(String threadId) async {
                       print("lisdt view $threads");
                       var threadId = threads[index]['threadId'];
                       var threadName = threads[index]['threadName'];
-                      bool isFavorite = threads[index]['isFavorite'] ;
+                      bool isFavorite = threads[index]['isFavorite'];
                       print(
                           "threadId = $threadId and threadName = ${threads.length}");
 
@@ -865,9 +958,10 @@ void _deleteThread(String threadId) async {
                         message: threadName,
                         userId: userId,
                         threadId: threadId,
-                        isFavorite:
-                            isFavorite, 
-                            onDelete: () { _deleteThread(threadId); }, 
+                        isFavorite: isFavorite,
+                        onDelete: () {
+                          _deleteThread(threadId);
+                        },
                         onTap: () {
                           setState(() {
                             currentThreadId = threadId;
@@ -885,7 +979,6 @@ void _deleteThread(String threadId) async {
                                       sender: 'user',
                                       timestamp: DateTime.parse(
                                           messageData['timestamp']),
-                                      
                                       userId: userId,
                                     );
 
@@ -894,7 +987,6 @@ void _deleteThread(String threadId) async {
                                       sender: 'server',
                                       timestamp: DateTime.parse(
                                           messageData['timestamp']),
-                                      
                                       userId: userId,
                                       audioUrl: messageData['audioUrl'],
                                     );
@@ -943,13 +1035,15 @@ class MessageListItem extends StatefulWidget {
   final String threadId;
   final Function() onDelete;
 
-
-  const MessageListItem(
-      {required this.message,
-      required this.isFavorite,
-      Key? key,
-      required this.onTap, required this.userId, required this.threadId, required this.onDelete,})
-      : super(key: key);
+  const MessageListItem({
+    required this.message,
+    required this.isFavorite,
+    Key? key,
+    required this.onTap,
+    required this.userId,
+    required this.threadId,
+    required this.onDelete,
+  }) : super(key: key);
 
   @override
   _MessageListItemState createState() => _MessageListItemState();
@@ -961,16 +1055,18 @@ class _MessageListItemState extends State<MessageListItem> {
   @override
   void initState() {
     super.initState();
-    isFavorite =  widget.isFavorite;
+    isFavorite = widget.isFavorite;
   }
+
   Future<void> _updateFavorite(bool favStatus) async {
     print('Updating favorite thread status...');
     try {
       var response = await http.post(
-        Uri.parse('http://127.0.0.1:5000/update-favorite-thread'),
+        Uri.parse(
+            'https://nvsirai-105bc2039f5f.herokuapp.com/update-favorite-thread'),
         body: jsonEncode({
-          'userId': widget.userId,  
-          'threadId': widget.threadId, 
+          'userId': widget.userId,
+          'threadId': widget.threadId,
           'isFavorite': favStatus,
         }),
         headers: {"Content-Type": "application/json"},
@@ -990,35 +1086,31 @@ class _MessageListItemState extends State<MessageListItem> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return InkWell(
-  onTap: widget.onTap,
-  child: ListTile(
-    leading: IconButton(
-      icon: Icon(
-        isFavorite ? Icons.favorite : Icons.favorite_border,
-        color: isFavorite ? Colors.red : Colors.grey,
+      onTap: widget.onTap,
+      child: ListTile(
+        leading: IconButton(
+          icon: Icon(
+            isFavorite ? Icons.favorite : Icons.favorite_border,
+            color: isFavorite ? Colors.red : Colors.grey,
+          ),
+          onPressed: () {
+            setState(() {
+              _updateFavorite(!isFavorite);
+            });
+          },
+        ),
+        title: Text(widget.message),
+        trailing: IconButton(
+            icon: Icon(
+              Icons.delete,
+              color: Colors.red, // You can choose your own color
+            ),
+            onPressed: widget.onDelete),
       ),
-      onPressed: () {
-        setState(() {
-          _updateFavorite(!isFavorite);
-        });
-      },
-    ),
-    title: Text(widget.message),
-     trailing: IconButton(
-      icon: Icon(
-        Icons.delete,
-        color: Colors.red,  // You can choose your own color
-      ),
-      onPressed: widget.onDelete
-    
-    ),
-  
-  ),
-);
+    );
   }
 }
 
@@ -1035,7 +1127,6 @@ class Message {
       {required this.text,
       required this.sender,
       required this.timestamp,
-  
       required this.userId,
       this.audioUrl,
       this.threadId});
@@ -1045,7 +1136,6 @@ class Message {
       'text': text,
       'sender': sender,
       'timestamp': timestamp.toIso8601String(),
-
       'userId': userId,
       'audioUrl': audioUrl,
       'threadId': threadId
@@ -1057,7 +1147,6 @@ class Message {
       text: map['text'],
       sender: map['sender'],
       timestamp: DateTime.parse(map['timestamp'] ?? DateTime.now().toString()),
-
       userId: map['userId'] ?? '',
       audioUrl: map['audioUrl'],
       threadId: map['threadId'],
