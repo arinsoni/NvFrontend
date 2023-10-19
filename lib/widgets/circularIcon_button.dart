@@ -8,6 +8,7 @@ class CircularIconButton extends StatelessWidget {
   final double height;
   final Color iconColor;
   final Function()? onPressed;
+  final bool isEnabled;
 
   const CircularIconButton({
     Key? key,
@@ -15,6 +16,7 @@ class CircularIconButton extends StatelessWidget {
     required this.width,
     required this.height,
     required this.iconSize,
+    required this.isEnabled,
     this.onPressed,
     required this.iconColor,
     required this.icon,
@@ -36,8 +38,9 @@ class CircularIconButton extends StatelessWidget {
             color: iconColor,
             size: iconSize,
           ),
+         
           padding: EdgeInsets.zero,
-          onPressed: onPressed,
+          onPressed: isEnabled ? onPressed : null,
         )));
   }
 }

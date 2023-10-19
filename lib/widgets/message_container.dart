@@ -130,7 +130,8 @@ class MessageContainer extends StatelessWidget {
                     height: 30,
                     width: 30,
                     iconSize: 20,
-                    iconColor:  Colors.white,
+                    iconColor:  Colors.white, isEnabled: true,
+                
                   )
                 : const SizedBox(
                     height: 0,

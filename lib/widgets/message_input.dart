@@ -49,7 +49,10 @@ class _MessageInputState extends State<MessageInput> {
                       height: 37,
                       width: 37,
                       iconSize: 20,
-                      iconColor: Colors.white,
+                      iconColor: Colors.white, 
+                      isEnabled: !widget.isLoading,
+                   
+                      
                     ),
                     Expanded(
                       child: Padding(
