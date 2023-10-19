@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:nvsirai/main.dart';
+import 'package:nvsirai/schema/message.dart';
 
 import 'CircularIcon_Button.dart';
 import 'audio _ player.dart';
@@ -13,6 +13,7 @@ class MessageContainer extends StatelessWidget {
   final Message message;
   final int index;
   final bool isRefresh;
+  final bool isEditable;
 
   const MessageContainer({
     Key? key,
@@ -21,7 +22,8 @@ class MessageContainer extends StatelessWidget {
     required this.isLoading,
     required this.index,
     required this.onRefresh,
-    required this.isRefresh
+    required this.isRefresh,
+    required this.isEditable
   }) : super(key: key);
 
   @override
@@ -41,7 +43,7 @@ class MessageContainer extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.only(bottom: 8.0),
-            child: isUserMessage
+            child: isUserMessage && isEditable
                 ? Container(
                     width: 30,
                     height: 30,
@@ -52,7 +54,7 @@ class MessageContainer extends StatelessWidget {
                     child: Center(
                       child: GestureDetector(
                         onTap: () {
-                          if (isUserMessage) {
+                          if (isUserMessage ) {
                             onEdit(message.text);
                           }
                         },
@@ -64,10 +66,7 @@ class MessageContainer extends StatelessWidget {
                       ),
                     ),
                   )
-                : Container(
-                    height: 0,
-                    width: 0,
-                  ),
+                : SizedBox(),
           ),
           Padding(
             padding: const EdgeInsets.only(left: 8.0),

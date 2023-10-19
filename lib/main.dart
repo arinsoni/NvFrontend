@@ -5,10 +5,12 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
+import 'package:nvsirai/schema/message.dart';
 import 'package:nvsirai/widgets/message_container.dart';
 import 'package:nvsirai/widgets/message_input.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
+import 'package:nvsirai/widgets/message_list_item.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -498,31 +500,35 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: Color(0xFFE1D6FF).withOpacity(0.45))),
                 child: GestureDetector(
                   onTap: () {
-                    Scaffold.of(context).openEndDrawer();
+                    !isLoading ?  Scaffold.of(context).openEndDrawer() : "";
                   },
                   child: Row(
                     children: [
                       IconButton(
+                        
                         icon: SvgPicture.asset(
                           'assets/svg/history.svg',
                           width: 12.0,
                           height: 14.0,
-                          colorFilter: const ColorFilter.mode(
+                          colorFilter: !isLoading ?  const ColorFilter.mode(
                             Color(0xFF4E4E4E),
                             BlendMode.srcIn,
-                          ),
+                          ) :  const ColorFilter.mode(
+                            Color.fromARGB(255, 193, 191, 191),
+                            BlendMode.srcIn,
+                          ) ,
                           semanticsLabel: 'A red up arrow',
                         ),
                         onPressed: () {
-                          Scaffold.of(context).openEndDrawer();
+                          !isLoading ?  Scaffold.of(context).openEndDrawer() : "";
                         },
                         splashColor: Colors.transparent,
                         hoverColor: Colors.transparent,
                       ),
-                      const Text(
+                       Text(
                         "History",
                         style: TextStyle(
-                          color: Color(0xFF2D2D2D),
+                          color: isLoading ? Color.fromARGB(255, 193, 191, 191) : Color(0xFF2D2D2D),
                           fontFamily: 'SourceCodePro',
                           fontWeight: FontWeight.w600,
                           fontSize: 12,
@@ -783,7 +789,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         int messageIndex = isLoading ? index - 1 : index;
                         print("debuggung auduio player : $messageIndex for ${messages[messageIndex].text}");
                         print("\n");
-                        late bool isRefresh = true;
                         return MessageContainer(
                           message: messages[messageIndex],
                           onEdit: (String text) {
@@ -796,6 +801,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           onRefresh: _refreshMessage,
                           index: messageIndex,
                           isRefresh: messageIndex == 0 ? true : false,
+                          isEditable: messageIndex == 1 ? true : false,
                         );
                       },
                     ),
@@ -939,37 +945,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       print(
                           "threadId = $threadId and threadName = ${threads.length}");
 
-                      // print("debugging time: ${userMessages[index]}");
-
-                      // DateTime messageTime = DateTime.parse(
-                      //     userMessages[index]['message']['timestamp']
-                      //         .toString());
-                      // DateTime currentDate = DateTime.now();
-
-                      // print(
-                      //     "Parsed message time: ${DateTime.parse(userMessages[index]['message']['timestamp'].toString()).day}");
-
-                      // bool isToday = messageTime.day == currentDate.day &&
-                      //     messageTime.month == currentDate.month &&
-                      //     messageTime.year == currentDate.year;
-                      // print("checking bool: $isToday");
-
-                      // String timestampHeading = isToday
-                      //     ? 'Today'
-                      //     : DateFormat('MMMM yyyy').format(messageTime);
-
-                      // if (index == 0 ||
-                      //     messageTime.day !=
-                      //         DateTime.parse(userMessages[index]
-                      //                     ['message']['timestamp']
-                      //                 .toString())
-                      //             .day ||
-                      //     messageTime.month !=
-                      //         DateTime.parse(userMessages[index]
-                      //                     ['message']['timestamp']
-                      //                 .toString())
-                      //             .month) {
-
                       return MessageListItem(
                         message: threadName,
                         userId: userId,
@@ -1040,134 +1015,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class MessageListItem extends StatefulWidget {
-  final String message;
-  final bool isFavorite;
-  final Function() onTap;
-  final String userId;
-  final String threadId;
-  final Function() onDelete;
-
-  const MessageListItem({
-    required this.message,
-    required this.isFavorite,
-    Key? key,
-    required this.onTap,
-    required this.userId,
-    required this.threadId,
-    required this.onDelete,
-  }) : super(key: key);
-
-  @override
-  _MessageListItemState createState() => _MessageListItemState();
-}
-
-class _MessageListItemState extends State<MessageListItem> {
-  late bool isFavorite;
-
-  @override
-  void initState() {
-    super.initState();
-    isFavorite = widget.isFavorite;
-  }
-
-  Future<void> _updateFavorite(bool favStatus) async {
-    print('Updating favorite thread status...');
-    String HOST = dotenv.env['HOST']!;
-    try {
-      var response = await http.post(
-        Uri.parse(
-            '${HOST}/update-favorite-thread'),
-        body: jsonEncode({
-          'userId': widget.userId,
-          'threadId': widget.threadId,
-          'isFavorite': favStatus,
-        }),
-        headers: {"Content-Type": "application/json"},
-      );
-
-      var data = json.decode(response.body);
-      print('Response from backend: $data');
-      if (data['success']) {
-        setState(() {
-          isFavorite = favStatus;
-        });
-      } else {
-        print('Error updating favorite status: ${data['error']}');
-      }
-    } catch (e) {
-      print('Error: $e');
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: widget.onTap,
-      child: ListTile(
-        leading: IconButton(
-          icon: Icon(
-            isFavorite ? Icons.favorite : Icons.favorite_border,
-            color: isFavorite ? Colors.red : Colors.grey,
-          ),
-          onPressed: () {
-            setState(() {
-              _updateFavorite(!isFavorite);
-            });
-          },
-        ),
-        title: Text(widget.message),
-        trailing: IconButton(
-            icon: Icon(
-              Icons.delete,
-              color: Colors.red, // You can choose your own color
-            ),
-            onPressed: widget.onDelete),
-      ),
-    );
-  }
-}
-
-class Message {
-  late String text;
-  final String sender;
-  final DateTime timestamp;
-
-  final String userId;
-  String? audioUrl;
-  String? threadId;
-
-  Message(
-      {required this.text,
-      required this.sender,
-      required this.timestamp,
-      required this.userId,
-      this.audioUrl,
-      this.threadId});
-
-  Map<String, dynamic> toMap() {
-    return {
-      'text': text,
-      'sender': sender,
-      'timestamp': timestamp.toIso8601String(),
-      'userId': userId,
-      'audioUrl': audioUrl,
-      'threadId': threadId
-    };
-  }
-
-  factory Message.fromMap(Map<String, dynamic> map) {
-    return Message(
-      text: map['text'],
-      sender: map['sender'],
-      timestamp: DateTime.parse(map['timestamp'] ?? DateTime.now().toString()),
-      userId: map['userId'] ?? '',
-      audioUrl: map['audioUrl'],
-      threadId: map['threadId'],
     );
   }
 }
