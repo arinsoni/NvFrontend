@@ -43,16 +43,14 @@ class _MessageInputState extends State<MessageInput> {
                 Row(
                   children: <Widget>[
                     CircularIconButton(
-                      icon: Icons.add,
+                      icon: Icons.mic,
                       backgroundColor: const Color(0xFFAB0505),
-                      onPressed: widget.onAddIconPressed,
+                      // onPressed: widget.onAddIconPressed,
                       height: 37,
                       width: 37,
                       iconSize: 20,
                       iconColor: Colors.white, 
                       isEnabled: !widget.isLoading,
-                   
-                      
                     ),
                     Expanded(
                       child: Padding(
@@ -91,18 +89,6 @@ class _MessageInputState extends State<MessageInput> {
                                     enabled: !widget.isLoading,
                                   ),
                                 ],
-                              ),
-                              Positioned(
-                                right: 8.0,
-                                top: 8.0,
-                                bottom: 8.0,
-                                child: IconButton(
-                                  icon: const Icon(Icons.mic),
-                                  color: Colors.grey,
-                                  onPressed: () {
-                                    widget.sendMessage(widget.messageController.text);
-                                  },
-                                ),
                               ),
                             ],
                           ),

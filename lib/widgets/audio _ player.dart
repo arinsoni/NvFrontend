@@ -16,17 +16,12 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
   late AudioPlayer _audioPlayer;
   bool isPlaying = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _audioPlayer = AudioPlayer();
-    _initAudioPlayer();
-  }
 
-  _initAudioPlayer() async {
-    await _audioPlayer.setUrl(widget.url);
+_initAudioPlayer() async {
+  await _audioPlayer.setUrl(widget.url);
 
-    _audioPlayer.processingStateStream.listen((state) {
+  _audioPlayer.processingStateStream.listen((state) {
+    if (mounted) {  
       setState(() {
         if (state == ProcessingState.completed) {
           _audioPlayer.pause();
@@ -36,8 +31,18 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
           isPlaying = _audioPlayer.playing;
         }
       });
-    });
+    }
+  });
+}
+
+
+  @override
+  void initState() {
+    super.initState();
+    _audioPlayer = AudioPlayer();
+    _initAudioPlayer();
   }
+
 
   @override
   void dispose() {
@@ -59,7 +64,6 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
                 if (isCurrentlyPlaying != null) {
                   isPlaying = isCurrentlyPlaying;
                 }
-
                 return IconButton(
                   icon: Icon(isPlaying ? Icons.pause : Icons.play_arrow, color: Color(0xFF4968FF),),
                   iconSize: 30, 

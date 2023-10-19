@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:intl/intl.dart';
+import 'package:logger/logger.dart';
 import 'package:nvsirai/widgets/message_container.dart';
 import 'package:nvsirai/widgets/message_input.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -54,6 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String currentThreadId = '';
   String currentThreadName = '';
   String HOST = dotenv.env['HOST']!;
+
   
 
   bool isNewThread = false;
@@ -225,7 +227,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       print("All messages ${messages}");
       setState(() {
-        audioUrl = '';
+        // audioUrl = '';
 
         if (originalMessage.isNotEmpty) {
           int index = messages.indexWhere(
@@ -358,22 +360,22 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void _clearHistory() async {
-    print('Clearing history');
-    try {
-      await deleteAllAudioFiles();
-      print('Files deleted successfully');
+  // void _clearHistory() async {
+  //   print('Clearing history');
+  //   try {
+  //     await deleteAllAudioFiles();
+  //     print('Files deleted successfully');
 
-      setState(() {
-        messages.clear();
-        isFirstMessageSent = false;
-      });
+  //     setState(() {
+  //       messages.clear();
+  //       isFirstMessageSent = false;
+  //     });
 
-      print('Messages cleared');
-    } catch (e) {
-      print('Error clearing history: $e');
-    }
-  }
+  //     print('Messages cleared');
+  //   } catch (e) {
+  //     print('Error clearing history: $e');
+  //   }
+  // }
 
   void _isQuestion() {
     setState(() {
@@ -444,7 +446,9 @@ class _HomeScreenState extends State<HomeScreen> {
             height: 20,
             width: 20,
           ),
-          onPressed: () {},
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
         ),
         title: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -551,13 +555,14 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          if (!isFirstMessageSent)
-            SingleChildScrollView(
+          
+            !isFirstMessageSent ?  SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.only(top: 20.0),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    
                     Center(
                       child: IntrinsicWidth(
                         child: Container(
@@ -757,7 +762,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-            ),
+            ) : SizedBox(),
           Container(
             child: Column(
               children: <Widget>[
@@ -769,12 +774,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       controller: _scrollController,
                       reverse: true,
                       itemBuilder: (context, index) {
+
                         if (isLoading && index == 0) {
                           return _buildLoadingIndicator();
                         }
+                        
 
                         int messageIndex = isLoading ? index - 1 : index;
-
+                        print("debuggung auduio player : $messageIndex for ${messages[messageIndex].text}");
+                        print("\n");
+                        late bool isRefresh = true;
                         return MessageContainer(
                           message: messages[messageIndex],
                           onEdit: (String text) {
@@ -786,6 +795,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           isLoading: isLoading && index == 0,
                           onRefresh: _refreshMessage,
                           index: messageIndex,
+                          isRefresh: messageIndex == 0 ? true : false,
                         );
                       },
                     ),
@@ -967,6 +977,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         isFavorite: isFavorite,
                         onDelete: () {
                           _deleteThread(threadId);
+                          messages.clear();
                         },
                         onTap: () {
                           setState(() {

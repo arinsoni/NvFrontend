@@ -12,15 +12,17 @@ class MessageContainer extends StatelessWidget {
   final Function(int) onRefresh;
   final Message message;
   final int index;
+  final bool isRefresh;
 
-  const MessageContainer(
-      {Key? key,
-      required this.message,
-      required this.onEdit,
-      required this.isLoading,
-      required this.index,
-      required this.onRefresh})
-      : super(key: key);
+  const MessageContainer({
+    Key? key,
+    required this.message,
+    required this.onEdit,
+    required this.isLoading,
+    required this.index,
+    required this.onRefresh,
+    required this.isRefresh
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -48,20 +50,18 @@ class MessageContainer extends StatelessWidget {
                       color: Colors.white,
                     ),
                     child: Center(
-
-                        child: GestureDetector(
-                      onTap:  () {
-                              if (isUserMessage) {
+                      child: GestureDetector(
+                        onTap: () {
+                          if (isUserMessage) {
                             onEdit(message.text);
                           }
-                            },
-                      child: Image.asset(
-                        'assets/images/edit.png',
-                        width: 20.0,
-                        height: 20.0,
+                        },
+                        child: Image.asset(
+                          'assets/images/edit.png',
+                          width: 20.0,
+                          height: 20.0,
+                        ),
                       ),
-                    ),
-                     
                     ),
                   )
                 : Container(
@@ -80,12 +80,12 @@ class MessageContainer extends StatelessWidget {
                 color: isUserMessage
                     ? const Color(0xFF6983FF)
                     : const Color(0xFFFFFFFF),
-                boxShadow:  [
+                boxShadow: [
                   BoxShadow(
-                    color: const Color.fromRGBO(0, 0, 0, 0.25), 
-                    offset: isUserMessage ?  Offset(0, 4) : Offset(5, 5), 
-                    blurRadius: isUserMessage ?  4.0 : 10,
-                    spreadRadius: 0.0, 
+                    color: const Color.fromRGBO(0, 0, 0, 0.25),
+                    offset: isUserMessage ? Offset(0, 4) : Offset(5, 5),
+                    blurRadius: isUserMessage ? 4.0 : 10,
+                    spreadRadius: 0.0,
                   ),
                 ],
                 borderRadius: BorderRadius.only(
@@ -120,7 +120,7 @@ class MessageContainer extends StatelessWidget {
           ),
           Padding(
             padding: EdgeInsets.only(left: 8, bottom: 8.0),
-            child: !isUserMessage
+            child: !isUserMessage && isRefresh
                 ? CircularIconButton(
                     icon: Icons.refresh,
                     backgroundColor: const Color(0xFF4968FF),
@@ -130,13 +130,10 @@ class MessageContainer extends StatelessWidget {
                     height: 30,
                     width: 30,
                     iconSize: 20,
-                    iconColor:  Colors.white, isEnabled: true,
-                
+                    iconColor: Colors.white,
+                    isEnabled: true,
                   )
-                : const SizedBox(
-                    height: 0,
-                    width: 0,
-                  ),
+                : const SizedBox(),
           ),
         ],
       );
