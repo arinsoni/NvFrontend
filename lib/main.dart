@@ -11,7 +11,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
-void main() async {
+Future<void> main() async {
+  await dotenv.load();
   runApp(const NVSirAI());
 }
 
@@ -29,6 +30,7 @@ class NVSirAI extends StatelessWidget {
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+  
 
   @override
   // ignore: library_private_types_in_public_api
@@ -51,6 +53,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isFavorite = false;
   String currentThreadId = '';
   String currentThreadName = '';
+  String HOST = dotenv.env['HOST']!;
+  
 
   bool isNewThread = false;
 
@@ -76,7 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
     print("fetching threads...");
 
     var url = Uri.parse(
-        'https://nvsirai-105bc2039f5f.herokuapp.com/get_threads/$userId');
+        '${HOST}/get_threads/$userId');
     print("API URL: $url");
     print("userID: $userId");
 
@@ -120,7 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       print("mi gai $threadId");
       var response = await http.post(
-        Uri.parse('https://nvsirai-105bc2039f5f.herokuapp.com/delete_thread'),
+        Uri.parse('${HOST}/delete_thread'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'userId': userId, 'threadId': threadId}),
       );
@@ -166,8 +170,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> deleteAllAudioFiles() async {
+    
     final response = await http.delete(
-      Uri.parse('https://nvsirai-105bc2039f5f.herokuapp.com/delete-audios'),
+      Uri.parse('${HOST}/delete-audios'),
     );
 
     if (response.statusCode == 200) {
@@ -179,9 +184,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<Map<String, dynamic>> fetchResponseFromAPI(String userInput,
       String userId, DateTime timestamp, bool isFirstMessageSent) async {
+        print("host: $HOST");
     try {
       final response = await http.post(
-        Uri.parse('https://nvsirai-105bc2039f5f.herokuapp.com/process_query'),
+        Uri.parse('${HOST}/process_query'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -293,7 +299,7 @@ class _HomeScreenState extends State<HomeScreen> {
     // }
     try {
       var response = await http.post(
-        Uri.parse('https://nvsirai-105bc2039f5f.herokuapp.com/delete_message'),
+        Uri.parse('${HOST}/delete_message'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'userId': userId,
@@ -390,7 +396,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (userId != null) {
       print("UserId: $userId");
       var url = Uri.parse(
-          'https://nvsirai-105bc2039f5f.herokuapp.com/get_messages/$userId/$threadId');
+          '${HOST}/get_messages/$userId/$threadId');
       print("URL: $url");
 
       try {
@@ -1060,10 +1066,11 @@ class _MessageListItemState extends State<MessageListItem> {
 
   Future<void> _updateFavorite(bool favStatus) async {
     print('Updating favorite thread status...');
+    String HOST = dotenv.env['HOST']!;
     try {
       var response = await http.post(
         Uri.parse(
-            'https://nvsirai-105bc2039f5f.herokuapp.com/update-favorite-thread'),
+            '${HOST}/update-favorite-thread'),
         body: jsonEncode({
           'userId': widget.userId,
           'threadId': widget.threadId,

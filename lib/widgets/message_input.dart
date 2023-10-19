@@ -5,7 +5,7 @@ import 'circularIcon_button.dart';
 
 typedef SendMessageFunction = void Function(String message);
 
-class MessageInput extends StatelessWidget {
+class MessageInput extends StatefulWidget {
   final TextEditingController messageController;
   final SendMessageFunction sendMessage;
   final VoidCallback onAddIconPressed;
@@ -17,6 +17,19 @@ class MessageInput extends StatelessWidget {
       required this.onAddIconPressed,
       required this.isLoading})
       : super(key: key);
+
+  @override
+  State<MessageInput> createState() => _MessageInputState();
+}
+
+class _MessageInputState extends State<MessageInput> {
+    late TokenLimitController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TokenLimitController(maxTokens: 8000, context: context);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +45,7 @@ class MessageInput extends StatelessWidget {
                     CircularIconButton(
                       icon: Icons.add,
                       backgroundColor: const Color(0xFFAB0505),
-                      onPressed: onAddIconPressed,
+                      onPressed: widget.onAddIconPressed,
                       height: 37,
                       width: 37,
                       iconSize: 20,
@@ -56,7 +69,7 @@ class MessageInput extends StatelessWidget {
                                 shrinkWrap: true,
                                 children: [
                                   TextField(
-                                    controller: messageController,
+                                    controller: widget.messageController,
                                     decoration: const InputDecoration(
                                       hintText: 'Message',
                                       hintStyle: TextStyle(
@@ -69,10 +82,10 @@ class MessageInput extends StatelessWidget {
                                     ),
                                     maxLines: null,
                                     onSubmitted: (message) {
-                                      sendMessage(message);
-                                      print("in input $isLoading");
+                                      widget.sendMessage(message);
+                                      print("in input ${widget.isLoading}");
                                     },
-                                    enabled: !isLoading,
+                                    enabled: !widget.isLoading,
                                   ),
                                 ],
                               ),
@@ -84,7 +97,7 @@ class MessageInput extends StatelessWidget {
                                   icon: const Icon(Icons.mic),
                                   color: Colors.grey,
                                   onPressed: () {
-                                    sendMessage(messageController.text);
+                                    widget.sendMessage(widget.messageController.text);
                                   },
                                 ),
                               ),
@@ -94,10 +107,10 @@ class MessageInput extends StatelessWidget {
                       ),
                     ),
                     GestureDetector(
-                      onTap: isLoading
+                      onTap: widget.isLoading
                           ? null
                           : () {
-                              sendMessage(messageController.text);
+                              widget.sendMessage(widget.messageController.text);
                             },
                       child: Image.asset(
                         'assets/images/send.png',
@@ -120,5 +133,40 @@ class MessageInput extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+
+
+
+class TokenLimitController extends TextEditingController {
+  final int maxTokens;
+  final BuildContext context;
+
+  TokenLimitController({required this.maxTokens, required this.context});
+
+  @override
+  set text(String newText) {
+    if (newText.split(' ').length <= maxTokens) {
+      super.text = newText;
+    } else {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Token Limit Reached'),
+            content: Text('You cannot enter more than $maxTokens tokens.'),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
+    }
   }
 }
