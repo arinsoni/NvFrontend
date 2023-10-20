@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -33,7 +34,6 @@ class NVSirAI extends StatelessWidget {
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
-  
 
   @override
   // ignore: library_private_types_in_public_api
@@ -51,24 +51,37 @@ class _HomeScreenState extends State<HomeScreen> {
   String audioUrl = "";
   bool isLoading = false;
   bool isFirstMessageSent = false;
-  late Color qColor = Color.fromARGB(255, 248, 208, 134).withOpacity(1);
-  late Color mColor = Colors.transparent;
+
+
   bool isFavorite = false;
   String currentThreadId = '';
   String currentThreadName = '';
   String HOST = dotenv.env['HOST']!;
+  DateTime threadTimestamp = DateTime.now();
 
-  
+  Color qColor = Color.fromARGB(255, 248, 208, 134).withOpacity(1);
+  Color mColor = Colors.transparent;
 
+  bool isFetching = true;
   bool isNewThread = false;
 
   String userId = '';
+
   @override
   void initState() {
     super.initState();
+    isFetching = true; // Set isFetching to true here
+
     _generateNewThreadId();
     _loadUserId().then((_) {
-      _fetchThreads();
+      _fetchThreads().then((_) {
+        // Wait for _fetchThreads to complete
+        if (mounted) {
+          setState(() {
+            isFetching = false; // Then set isFetching to false
+          });
+        }
+      });
     });
   }
 
@@ -83,8 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _fetchThreads() async {
     print("fetching threads...");
 
-    var url = Uri.parse(
-        '${HOST}/get_threads/$userId');
+    var url = Uri.parse('${HOST}/get_threads/$userId');
     print("API URL: $url");
     print("userID: $userId");
 
@@ -105,6 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     'threadId': thread['threadId'] as String,
                     'threadName': thread['threadName'] as String,
                     'isFavorite': thread['isFavorite'] as bool,
+                    'threadTimestamp': thread['lastMessageTimestamp']
                   };
                 } else {
                   return null;
@@ -122,6 +135,23 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       print("API response status code: ${response.statusCode}");
     }
+  }
+
+  Map<String, List<Map<dynamic, dynamic>>> organizeThreadsByDate(
+      List<Map> threads) {
+    Map<String, List<Map<dynamic, dynamic>>> organized = {};
+
+    for (var thread in threads) {
+      DateTime lastMessageDate = DateTime.parse(thread['threadTimestamp']);
+      String dateKey = DateFormat('yyyy-MM-dd').format(lastMessageDate);
+
+      if (organized[dateKey] == null) {
+        organized[dateKey] = [];
+      }
+      organized[dateKey]!.add(thread);
+    }
+
+    return organized;
   }
 
   Future<bool> deleteThread(userId, threadId) async {
@@ -160,21 +190,32 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadUserId() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? id = prefs.getString('user_id');
-    if (id == null) {
-      var random = Random();
-      var values = List<int>.generate(12, (i) => random.nextInt(256));
-      id = base64UrlEncode(values);
-      await prefs.setString('user_id', id);
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? id = prefs.getString('user_id');
+      if (id == null) {
+        var random = Random();
+        var values = List<int>.generate(12, (i) => random.nextInt(256));
+        id = base64UrlEncode(values);
+        await prefs.setString('user_id', id);
+      }
+
+      if (mounted) {
+        // Ensure the widget is still in the tree
+        setState(() {
+          userId = id!;
+          isFetching = true; // Update this based on when you need it
+        });
+      }
+    } catch (e) {
+      print('Error loading user ID: $e');
+      setState(() {
+        isFetching = true; // Ensure the UI isn't locked in a loading state
+      });
     }
-    setState(() {
-      userId = id!;
-    });
   }
 
   Future<void> deleteAllAudioFiles() async {
-    
     final response = await http.delete(
       Uri.parse('${HOST}/delete-audios'),
     );
@@ -188,10 +229,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<Map<String, dynamic>> fetchResponseFromAPI(String userInput,
       String userId, DateTime timestamp, bool isFirstMessageSent) async {
-        print("host: $HOST");
+    print("host: $HOST");
     try {
       final response = await http.post(
-        Uri.parse('${HOST}/process_query'),
+        Uri.parse('http://127.0.0.1:5000/process_query'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -379,28 +420,36 @@ class _HomeScreenState extends State<HomeScreen> {
   //   }
   // }
 
-  void _isQuestion() {
-    setState(() {
-      print("callled");
-      qColor = Color.fromARGB(255, 248, 208, 134).withOpacity(1);
-      mColor = Colors.transparent;
+  void prettyPrint(Map<String, dynamic> map) {
+    map.forEach((key, value) {
+      print('$key: ');
+      for (var item in value) {
+        print('  $item');
+      }
     });
   }
 
-  void _isMotivation() {
-    setState(() {
-      print("callled");
-      mColor = Color(0xFFFFBCD4).withOpacity(1);
-      qColor = Colors.transparent;
-    });
-  }
+  // void _isQuestion() {
+  //   setState(() {
+  //     print("callled");
+  //     qColor = Color.fromARGB(255, 248, 208, 134).withOpacity(1);
+  //     mColor = Colors.transparent;
+  //   });
+  // }
+
+  // void _isMotivation() {
+  //   setState(() {
+  //     print("callled");
+  //     mColor = Color(0xFFFFBCD4).withOpacity(1);
+  //     qColor = Colors.transparent;
+  //   });
+  // }
 
   Future<List<Map<String, dynamic>>> fetchMessages(String userId,
       [String? threadId]) async {
     if (userId != null) {
       print("UserId: $userId");
-      var url = Uri.parse(
-          '${HOST}/get_messages/$userId/$threadId');
+      var url = Uri.parse('${HOST}/get_messages/$userId/$threadId');
       print("URL: $url");
 
       try {
@@ -425,6 +474,8 @@ class _HomeScreenState extends State<HomeScreen> {
       return [];
     }
   }
+
+// Assuming getLastMessageTimestamp is a function that returns the timestamp of the last message in a thread.
 
   @override
   Widget build(BuildContext context) {
@@ -500,35 +551,40 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: Color(0xFFE1D6FF).withOpacity(0.45))),
                 child: GestureDetector(
                   onTap: () {
-                    !isLoading ?  Scaffold.of(context).openEndDrawer() : "";
+                    !isLoading ? Scaffold.of(context).openEndDrawer() : "";
                   },
                   child: Row(
                     children: [
                       IconButton(
-                        
                         icon: SvgPicture.asset(
                           'assets/svg/history.svg',
                           width: 12.0,
                           height: 14.0,
-                          colorFilter: !isLoading ?  const ColorFilter.mode(
-                            Color(0xFF4E4E4E),
-                            BlendMode.srcIn,
-                          ) :  const ColorFilter.mode(
-                            Color.fromARGB(255, 193, 191, 191),
-                            BlendMode.srcIn,
-                          ) ,
+                          colorFilter: !isLoading
+                              ? const ColorFilter.mode(
+                                  Color(0xFF4E4E4E),
+                                  BlendMode.srcIn,
+                                )
+                              : const ColorFilter.mode(
+                                  Color.fromARGB(255, 193, 191, 191),
+                                  BlendMode.srcIn,
+                                ),
                           semanticsLabel: 'A red up arrow',
                         ),
                         onPressed: () {
-                          !isLoading ?  Scaffold.of(context).openEndDrawer() : "";
+                          !isLoading
+                              ? Scaffold.of(context).openEndDrawer()
+                              : "";
                         },
                         splashColor: Colors.transparent,
                         hoverColor: Colors.transparent,
                       ),
-                       Text(
+                      Text(
                         "History",
                         style: TextStyle(
-                          color: isLoading ? Color.fromARGB(255, 193, 191, 191) : Color(0xFF2D2D2D),
+                          color: isLoading
+                              ? Color.fromARGB(255, 193, 191, 191)
+                              : Color(0xFF2D2D2D),
                           fontFamily: 'SourceCodePro',
                           fontWeight: FontWeight.w600,
                           fontSize: 12,
@@ -545,290 +601,340 @@ class _HomeScreenState extends State<HomeScreen> {
           )
         ],
       ),
-      body: Stack(
-        children: [
-          Container(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.white,
-                    Color(0xFFEBEEFD),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          
-            !isFirstMessageSent ?  SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 20.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    
-                    Center(
-                      child: IntrinsicWidth(
-                        child: Container(
-                          child: Padding(
-                            padding: const EdgeInsets.all(4.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(5),
-                                    border: Border.all(
-                                      width: 3,
-                                      color: qColor,
-                                    ),
-                                  ),
-                                  child: Container(
-                                    margin: EdgeInsets.all(3),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                          width: 1.2,
-                                          color: Color(0xFFE1D6FF)
-                                              .withOpacity(0.45)),
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          Color(0xFFFFF9EE),
-                                          Color(0xFFFFEFD0)
-                                        ],
-                                        stops: [0.0, 1.0],
-                                        end: Alignment.centerLeft,
-                                        begin: Alignment.centerRight,
-                                      ),
-                                      borderRadius: BorderRadius.circular(5),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        ElevatedButton(
-                                          style: ButtonStyle(
-                                            backgroundColor:
-                                                MaterialStateProperty.all(
-                                                    Colors.transparent),
-                                            elevation:
-                                                MaterialStateProperty.all(0),
-                                            overlayColor: MaterialStateProperty
-                                                .resolveWith<Color?>(
-                                                    (Set<MaterialState>
-                                                        states) {
-                                              if (states.contains(
-                                                  MaterialState.pressed))
-                                                return Colors.transparent;
-                                              return null;
-                                            }),
-                                            minimumSize:
-                                                MaterialStateProperty.all(
-                                                    Size(10, 40)),
-                                            maximumSize:
-                                                MaterialStateProperty.all(
-                                                    Size(200, 40)),
-                                          ),
-                                          onPressed: () {
-                                            _isQuestion();
-                                          },
-                                          child: Text(
-                                            'Questions',
-                                            style: TextStyle(
-                                                color: Color(0xFF4E4E4E),
-                                                fontSize: (0.025 * screenWidth)
-                                                    .clamp(12, 24)
-                                                    .toDouble(),
-                                                fontFamily: 'Montserrat',
-                                                fontWeight: FontWeight.w600),
-                                          ),
-                                        ),
-                                        Image.asset(
-                                          'assets/images/atom.png',
-                                          width: 18,
-                                          height: 18,
-                                          color: Color.fromARGB(
-                                              255, 247, 211, 143),
-                                        ),
-                                        SizedBox(
-                                          width: 10,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                Flexible(
-                                    child: SizedBox(
-                                  width: 20,
-                                )),
-                                GestureDetector(
-                                  onTap: () => {
-                                    setState(() {
-                                      print("callled");
-                                      mColor = Color(0xFFFFBCD4).withOpacity(1);
-                                      qColor = Colors.transparent;
-                                    })
-                                  },
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(5),
-                                      border:
-                                          Border.all(width: 3, color: mColor),
-                                    ),
-                                    child: Container(
-                                      margin: EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: [
-                                            Color(0xFFFFBCD4), // #FFBCD4
-                                            Color(0xFFFFF3F8), // #FFF3F8
-                                          ],
-                                          stops: [
-                                            0,
-                                            1,
-                                          ],
-                                          begin: Alignment.centerLeft,
-                                          end: Alignment.centerRight,
-                                        ),
-                                        borderRadius: BorderRadius.circular(5),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          ElevatedButton(
-                                            style: ButtonStyle(
-                                              backgroundColor:
-                                                  MaterialStateProperty.all(
-                                                      Colors.transparent),
-                                              elevation:
-                                                  MaterialStateProperty.all(0),
-                                              overlayColor:
-                                                  MaterialStateProperty
-                                                      .resolveWith<Color?>((Set<
-                                                              MaterialState>
-                                                          states) {
-                                                if (states.contains(
-                                                    MaterialState.pressed))
-                                                  return Colors.transparent;
-                                                return null;
-                                              }),
-                                              minimumSize:
-                                                  MaterialStateProperty.all(
-                                                      Size(10, 40)),
-                                              maximumSize:
-                                                  MaterialStateProperty.all(
-                                                      Size(200, 40)),
-                                            ),
-                                            onPressed: () {
-                                              _isMotivation();
-                                            },
-                                            child: Text(
-                                              'Motivation',
-                                              style: TextStyle(
-                                                  color: Color(0xFF4E4E4E),
-                                                  fontSize:
-                                                      (0.025 * screenWidth)
-                                                          .clamp(12, 24)
-                                                          .toDouble(),
-                                                  fontFamily: 'Montserrat',
-                                                  fontWeight: FontWeight.w600),
-                                            ),
-                                          ),
-                                          Image.asset(
-                                            'assets/images/motivation.png',
-                                            width: 20,
-                                            height: 20,
-                                            color: Color(0xFFFEB1CD),
-                                          ),
-                                          SizedBox(
-                                            width: 10,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+      body: isFetching
+          ? Container(
+              child: Text("Loading..."),
+            )
+          : Stack(
+              children: [
+                Container(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.white,
+                          Color(0xFFEBEEFD),
+                        ],
                       ),
-                    ),
-                    // Padding(
-                    //   padding: EdgeInsets.only(
-                    //       right: screenWidth * 0.1,
-                    //       top: 10,
-                    //       left: 0.1 * screenWidth),
-                    //   child: Text(
-                    //     desc,
-                    //     textAlign: TextAlign.center,
-                    //     style: const TextStyle(
-                    //       color: Color(0xFF878787),
-                    //     ),
-                    //   ),
-                    // ),
-                  ],
-                ),
-              ),
-            ) : SizedBox(),
-          Container(
-            child: Column(
-              children: <Widget>[
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ListView.builder(
-                      itemCount: messages.length + (isLoading ? 1 : 0),
-                      controller: _scrollController,
-                      reverse: true,
-                      itemBuilder: (context, index) {
-
-                        if (isLoading && index == 0) {
-                          return _buildLoadingIndicator();
-                        }
-                        
-
-                        int messageIndex = isLoading ? index - 1 : index;
-                        print("debuggung auduio player : $messageIndex for ${messages[messageIndex].text}");
-                        print("\n");
-                        return MessageContainer(
-                          message: messages[messageIndex],
-                          onEdit: (String text) {
-                            setState(() {
-                              _messageController.text = text;
-                              originalMessage = text;
-                            });
-                          },
-                          isLoading: isLoading && index == 0,
-                          onRefresh: _refreshMessage,
-                          index: messageIndex,
-                          isRefresh: messageIndex == 0 ? true : false,
-                          isEditable: messageIndex == 1 ? true : false,
-                        );
-                      },
                     ),
                   ),
                 ),
-                MessageInput(
-                  messageController: _messageController,
-                  sendMessage: mySendMessageFunction,
-                  onAddIconPressed: () {
-                    print("Add button pressed");
-                    setState(() {
-                      _generateNewThreadId();
-                      print("New thread ID generated: $currentThreadId");
-                      print(threads);
-                      // threads.add(currentThreadId);
-                      print("Current threads: $threads");
-                      messages.clear();
-                    });
-                    print("State set");
-                  },
-                  isLoading: isLoading,
+                Container(
+                  child: Column(
+                    children: <Widget>[
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: ListView.builder(
+                            itemCount: messages.length + (isLoading ? 1 : 0),
+                            controller: _scrollController,
+                            reverse: true,
+                            itemBuilder: (context, index) {
+                              if (isLoading && index == 0) {
+                                return _buildLoadingIndicator();
+                              }
+
+                              int messageIndex = isLoading ? index - 1 : index;
+                              print(
+                                  "debuggung timestamp : $messageIndex for ${messages[messageIndex].timestamp} of message ${messages[messageIndex].text} with index = $messageIndex");
+                              DateTime currentDate = DateTime.now();
+
+                              threadTimestamp =
+                                  messages[messages.length - 1].timestamp;
+
+                              bool isToday = threadTimestamp.day ==
+                                      currentDate.day &&
+                                  threadTimestamp.month == currentDate.month &&
+                                  threadTimestamp.year == currentDate.year;
+
+                              print("checking bool: $isToday");
+
+                              // timestampHeading = isToday
+                              //     ? 'Today'
+                              //     : DateFormat('MMMM yyyy').format(threadTimestamp);
+
+                              // print(
+                              //     "threadTimestamp = $threadTimestamp for nessage = ${messages[messages.length - 1].text}");
+                              print("\n");
+                              return MessageContainer(
+                                message: messages[messageIndex],
+                                onEdit: (String text) {
+                                  setState(() {
+                                    _messageController.text = text;
+                                    originalMessage = text;
+                                  });
+                                },
+                                isLoading: isLoading && index == 0,
+                                onRefresh: _refreshMessage,
+                                index: messageIndex,
+                                isRefresh: messageIndex == 0 ? true : false,
+                                isEditable: messageIndex == 1 ? true : false,
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                      MessageInput(
+                        messageController: _messageController,
+                        sendMessage: mySendMessageFunction,
+                        onAddIconPressed: () {
+                          print("Add button pressed");
+                          setState(() {
+                            _generateNewThreadId();
+                            print("New thread ID generated: $currentThreadId");
+                            print(threads);
+                            // threads.add(currentThreadId);
+                            print("Current threads: $threads");
+                            messages.clear();
+                          });
+                          print("State set");
+                        },
+                        isLoading: isLoading,
+                      ),
+                    ],
+                  ),
                 ),
+                !isFirstMessageSent
+                    ? SingleChildScrollView(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 20.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Center(
+                                child: IntrinsicWidth(
+                                  child: Container(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(4.0),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(5),
+                                              border: Border.all(
+                                                width: 3,
+                                                color: qColor,
+                                              ),
+                                            ),
+                                            child: Container(
+                                              margin: EdgeInsets.all(3),
+                                              decoration: BoxDecoration(
+                                                border: Border.all(
+                                                    width: 1.2,
+                                                    color: Color(0xFFE1D6FF)
+                                                        .withOpacity(0.45)),
+                                                gradient: LinearGradient(
+                                                  colors: [
+                                                    Color(0xFFFFF9EE),
+                                                    Color(0xFFFFEFD0)
+                                                  ],
+                                                  stops: [0.0, 1.0],
+                                                  end: Alignment.centerLeft,
+                                                  begin: Alignment.centerRight,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(5),
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  ElevatedButton(
+                                                    style: ButtonStyle(
+                                                      backgroundColor:
+                                                          MaterialStateProperty
+                                                              .all(Colors
+                                                                  .transparent),
+                                                      elevation:
+                                                          MaterialStateProperty
+                                                              .all(0),
+                                                      overlayColor:
+                                                          MaterialStateProperty
+                                                              .resolveWith<
+                                                                  Color?>((Set<
+                                                                      MaterialState>
+                                                                  states) {
+                                                        if (states.contains(
+                                                            MaterialState
+                                                                .pressed))
+                                                          return Colors
+                                                              .transparent;
+                                                        return null;
+                                                      }),
+                                                      minimumSize:
+                                                          MaterialStateProperty
+                                                              .all(
+                                                                  Size(10, 40)),
+                                                      maximumSize:
+                                                          MaterialStateProperty
+                                                              .all(Size(
+                                                                  200, 40)),
+                                                    ),
+                                                    onPressed: () {
+                                                      setState(() {
+                                                        qColor = Color.fromARGB(255,
+                                                                248, 208, 134)
+                                                            .withOpacity(1);
+                                                        mColor = Colors.transparent;
+                                                      });
+                                                    },
+                                                    child: Text(
+                                                      'Questions',
+                                                      style: TextStyle(
+                                                          color:
+                                                              Color(0xFF4E4E4E),
+                                                          fontSize: (0.025 *
+                                                                  screenWidth)
+                                                              .clamp(12, 24)
+                                                              .toDouble(),
+                                                          fontFamily:
+                                                              'Montserrat',
+                                                          fontWeight:
+                                                              FontWeight.w600),
+                                                    ),
+                                                  ),
+                                                  Image.asset(
+                                                    'assets/images/atom.png',
+                                                    width: 18,
+                                                    height: 18,
+                                                    color: Color.fromARGB(
+                                                        255, 247, 211, 143),
+                                                  ),
+                                                  SizedBox(
+                                                    width: 10,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                          Flexible(
+                                              child: SizedBox(
+                                            width: 20,
+                                          )),
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(5),
+                                              border: Border.all(
+                                                  width: 3, color: mColor),
+                                            ),
+                                            child: Container(
+                                              
+                                              margin: EdgeInsets.all(4),
+                                              decoration: BoxDecoration(
+                                                  gradient: LinearGradient(
+                                                    colors: [
+                                                      Color(
+                                                          0xFFFFBCD4), // #FFBCD4
+                                                      Color(
+                                                          0xFFFFF3F8), // #FFF3F8
+                                                    ],
+                                                    stops: [
+                                                      0,
+                                                      1,
+                                                    ],
+                                                    begin: Alignment.centerLeft,
+                                                    end: Alignment.centerRight,
+                                                  ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(5),
+                                                ),
+                                              child: Row(
+                                                children: [
+                                                  ElevatedButton(
+                                                    style: ButtonStyle(
+                                                      backgroundColor:
+                                                          MaterialStateProperty
+                                                              .all(Colors
+                                                                  .transparent),
+                                                      elevation:
+                                                          MaterialStateProperty
+                                                              .all(0),
+                                                      overlayColor:
+                                                          MaterialStateProperty
+                                                              .resolveWith<
+                                                                  Color?>((Set<
+                                                                      MaterialState>
+                                                                  states) {
+                                                        if (states.contains(
+                                                            MaterialState
+                                                                .pressed))
+                                                          return Colors
+                                                              .transparent;
+                                                        return null;
+                                                      }),
+                                                      minimumSize:
+                                                          MaterialStateProperty
+                                                              .all(
+                                                                  Size(10, 40)),
+                                                      maximumSize:
+                                                          MaterialStateProperty
+                                                              .all(Size(
+                                                                  200, 40)),
+                                                    ),
+                                                    onPressed: () {
+                                                      setState(() {
+                                                         mColor = Color(0xFFFFBCD4).withOpacity(1);
+      qColor = Colors.transparent;
+                                                      });
+                                                    },
+                                                    child: Text(
+                                                      'Motivation',
+                                                      style: TextStyle(
+                                                          color:
+                                                              Color(0xFF4E4E4E),
+                                                          fontSize: (0.025 *
+                                                                  screenWidth)
+                                                              .clamp(12, 24)
+                                                              .toDouble(),
+                                                          fontFamily:
+                                                              'Montserrat',
+                                                          fontWeight:
+                                                              FontWeight.w600),
+                                                    ),
+                                                  ),
+                                                  Image.asset(
+                                                    'assets/images/motivation.png',
+                                                    width: 20,
+                                                    height: 20,
+                                                    color: Color(0xFFFEB1CD),
+                                                  ),
+                                                  SizedBox(
+                                                    width: 10,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              // Padding(
+                              //   padding: EdgeInsets.only(
+                              //       right: screenWidth * 0.1,
+                              //       top: 10,
+                              //       left: 0.1 * screenWidth),
+                              //   child: Text(
+                              //     desc,
+                              //     textAlign: TextAlign.center,
+                              //     style: const TextStyle(
+                              //       color: Color(0xFF878787),
+                              //     ),
+                              //   ),
+                              // ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : SizedBox(),
               ],
             ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -859,7 +965,12 @@ class _HomeScreenState extends State<HomeScreen> {
     if (userId.isEmpty) {
       return Center(child: CircularProgressIndicator());
     }
-    print("1st come here ");
+    Map<String, List<Map<dynamic, dynamic>>> threadsByDate =
+        organizeThreadsByDate(threads);
+    ;
+
+    print("length: ${threadsByDate.keys.length}");
+
     return Container(
       margin: EdgeInsets.fromLTRB(0, MediaQuery.of(context).padding.top, 0, 0),
       child: Drawer(
@@ -936,84 +1047,226 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 Expanded(
                   child: ListView.builder(
-                    itemCount: threads.length,
+                    itemCount: threadsByDate.keys.length,
                     itemBuilder: (context, index) {
-                      print("lisdt view $threads");
-                      var threadId = threads[index]['threadId'];
-                      var threadName = threads[index]['threadName'];
-                      bool isFavorite = threads[index]['isFavorite'];
-                      print(
-                          "threadId = $threadId and threadName = ${threads.length}");
+                      // print(
+                      //     "threadId = $threadId and threadName = ${threads.length}");
 
-                      return MessageListItem(
-                        message: threadName,
-                        userId: userId,
-                        threadId: threadId,
-                        isFavorite: isFavorite,
-                        onDelete: () {
-                          _deleteThread(threadId);
-                          messages.clear();
-                        },
-                        onTap: () {
-                          setState(() {
-                            currentThreadId = threadId;
-                            currentThreadName = threadName;
-                            messages.clear();
-                          });
+                      // print("time debug ${threads[index]['threadTimestamp']}");
 
-                          fetchMessages(userId, threadId)
-                              .then((fetchedMessages) {
-                            setState(() {
-                              messages.addAll(fetchedMessages
-                                  .map((messageData) {
-                                    Message inputMessage = Message(
-                                      text: messageData['input'],
-                                      sender: 'user',
-                                      timestamp: DateTime.parse(
-                                          messageData['timestamp']),
-                                      userId: userId,
-                                    );
+                      String date =
+                          threadsByDate.keys.toList().reversed.elementAt(index);
+                      DateTime currentDate = DateTime.now();
+                      DateTime threadTimestamp = DateTime.parse(date);
+                      int daysDifference =
+                          currentDate.difference(threadTimestamp).inDays;
 
-                                    Message outputMessage = Message(
-                                      text: messageData['output'],
-                                      sender: 'server',
-                                      timestamp: DateTime.parse(
-                                          messageData['timestamp']),
-                                      userId: userId,
-                                      audioUrl: messageData['audioUrl'],
-                                    );
+                      // Define the section text based on days difference
+                      String sectionText;
+                      if (daysDifference == 0) {
+                        sectionText = 'Today';
+                      } else if (daysDifference == 1) {
+                        sectionText = 'Yesterday';
+                      } else if (daysDifference == 2) {
+                        sectionText = '2 Days Ago';
+                      } else {
+                        sectionText =
+                            DateFormat('MMMM dd, yyyy').format(threadTimestamp);
+                      }
 
-                                    return [
-                                      inputMessage,
-                                      outputMessage,
-                                    ];
-                                  })
-                                  .expand((pair) => pair)
-                                  .toList()
-                                  .reversed);
-                              print(
-                                  "Messages after adding fetched messages: ${messages}");
-                              Navigator.of(context).pop();
-                            });
-                          }).catchError((error) {
-                            print('Error fetching messages: $error');
-                          });
-                        },
+                      List<Map<dynamic, dynamic>> threadsForDate =
+                          threadsByDate[date]!;
+                      // print("timestamp debuggggg: $date and $threadsForDate");
+
+                      return Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              sectionText,
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  fontFamily: "SourceCodePro"),
+                            ),
+                          ),
+                          ...threadsForDate.reversed.map((thread) {
+                            String threadName = thread['threadName'];
+                            String threadId = thread['threadId'];
+                            bool isFavorite = thread['isFavorite'];
+
+                            return MessageListItem(
+                              message: threadName,
+                              userId: userId,
+                              threadId: threadId,
+                              isFavorite: isFavorite,
+                              onDelete: () {
+                                _deleteThread(threadId);
+                                messages.clear();
+                              },
+                              onTap: () {
+                                setState(() {
+                                  currentThreadId = threadId;
+                                  currentThreadName = threadName;
+                                  messages.clear();
+                                  Navigator.of(context).pop();
+                                });
+
+                                fetchMessages(userId, threadId)
+                                    .then((fetchedMessages) {
+                                  setState(() {
+                                    messages.addAll(fetchedMessages
+                                        .map((messageData) {
+                                          Message inputMessage = Message(
+                                            text: messageData['input'],
+                                            sender: 'user',
+                                            timestamp: DateTime.parse(
+                                                messageData['timestamp']),
+                                            userId: userId,
+                                          );
+
+                                          Message outputMessage = Message(
+                                            text: messageData['output'],
+                                            sender: 'server',
+                                            timestamp: DateTime.parse(
+                                                messageData['timestamp']),
+                                            userId: userId,
+                                            audioUrl: messageData['audioUrl'],
+                                          );
+
+                                          return [inputMessage, outputMessage];
+                                        })
+                                        .expand((pair) => pair)
+                                        .toList()
+                                        .reversed);
+                                    isFetching = false;
+                                  });
+                                }).catchError((error) {
+                                  print('Error fetching messages: $error');
+                                });
+                              },
+                            );
+                          }).toList(),
+                        ],
                       );
-                      // } else {
-                      //   return MessageListItem(
-                      //     message: userMessages[index]['message'],
-                      //     isFavorite:
-                      //         userMessages[index]['favorite'] ?? false,
-                      //   );
-                      // }
                     },
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      Navigator.of(context).pop();
+                      _generateNewThreadId();
+                      print("New thread ID generated: $currentThreadId");
+                      print(threads);
+                      print("Current threads: $threads");
+                      messages.clear();
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(
+                    primary: Color(0xFFEBEEFD),
+                    elevation: 0,
+                    padding: EdgeInsets.all(2),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(0),
+                    ),
+                  ),
+                  child: Text(
+                    ' + ',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 30,
+                    ),
                   ),
                 )
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class MessageListItem extends StatefulWidget {
+  final String message;
+  final bool isFavorite;
+  final Function() onTap;
+  final String userId;
+  final String threadId;
+  final Function() onDelete;
+
+  const MessageListItem({
+    required this.message,
+    required this.isFavorite,
+    Key? key,
+    required this.onTap,
+    required this.userId,
+    required this.threadId,
+    required this.onDelete,
+  }) : super(key: key);
+
+  @override
+  _MessageListItemState createState() => _MessageListItemState();
+}
+
+class _MessageListItemState extends State<MessageListItem> {
+  late bool isFavorite;
+
+  @override
+  void initState() {
+    super.initState();
+    isFavorite = widget.isFavorite;
+  }
+
+  Future<void> _updateFavorite(bool favStatus) async {
+    print('Updating favorite thread status... to $favStatus');
+    // String HOST = dotenv.env['HOST']!;
+
+    var response = await http.post(
+      Uri.parse('http://localhost:5000/update-favorite-thread'),
+      body: jsonEncode({
+        'userId': widget.userId,
+        'threadId': widget.threadId,
+        'isFavorite': favStatus,
+      }),
+      headers: {"Content-Type": "application/json"},
+    );
+
+    var data = json.decode(response.body);
+    print('Response from backend: $data');
+    if (data['success']) {
+      setState(() {
+        isFavorite = favStatus;
+      });
+    } else {
+      print('Error updating favorite status: ${data['error']}');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: widget.onTap,
+      child: ListTile(
+        leading: IconButton(
+          icon: Icon(
+            isFavorite ? Icons.favorite : Icons.favorite_border,
+            color: isFavorite ? Colors.red : Colors.grey,
+          ),
+          onPressed: () {
+            setState(() {
+              _updateFavorite(!isFavorite);
+            });
+          },
+        ),
+        title: Text(widget.message),
+        trailing: IconButton(
+            icon: Icon(
+              Icons.delete,
+              color: Colors.grey, // You can choose your own color
+            ),
+            onPressed: widget.onDelete),
       ),
     );
   }

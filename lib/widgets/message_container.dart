@@ -1,3 +1,4 @@
+import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:nvsirai/schema/message.dart';
@@ -15,16 +16,16 @@ class MessageContainer extends StatelessWidget {
   final bool isRefresh;
   final bool isEditable;
 
-  const MessageContainer({
-    Key? key,
-    required this.message,
-    required this.onEdit,
-    required this.isLoading,
-    required this.index,
-    required this.onRefresh,
-    required this.isRefresh,
-    required this.isEditable
-  }) : super(key: key);
+  const MessageContainer(
+      {Key? key,
+      required this.message,
+      required this.onEdit,
+      required this.isLoading,
+      required this.index,
+      required this.onRefresh,
+      required this.isRefresh,
+      required this.isEditable})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +55,7 @@ class MessageContainer extends StatelessWidget {
                     child: Center(
                       child: GestureDetector(
                         onTap: () {
-                          if (isUserMessage ) {
+                          if (isUserMessage) {
                             onEdit(message.text);
                           }
                         },
@@ -105,13 +106,25 @@ class MessageContainer extends StatelessWidget {
                   Padding(
                     padding:
                         EdgeInsets.fromLTRB(16, isUserMessage ? 8 : 2, 8, 8),
-                    child: Text(
-                      message.text,
-                      style: TextStyle(
-                        color: isUserMessage ? Colors.white : Colors.black,
-                        fontSize: 16,
-                      ),
-                    ),
+                    child: isUserMessage
+                        ? Text(
+                            message.text,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
+                          )
+                        : DefaultTextStyle(
+                            style:
+                                TextStyle(fontSize: 16.0, color: Colors.black),
+                            child: AnimatedTextKit(
+                              animatedTexts: [
+                                TypewriterAnimatedText(message.text),
+                              ],
+                              pause: Duration(microseconds: 2000),
+                              isRepeatingAnimation: false,
+                            ),
+                          ),
                   ),
                 ],
               ),
