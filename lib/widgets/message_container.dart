@@ -15,6 +15,7 @@ class MessageContainer extends StatelessWidget {
   final int index;
   final bool isRefresh;
   final bool isEditable;
+  final bool isLastMessage;
 
   const MessageContainer(
       {Key? key,
@@ -24,7 +25,7 @@ class MessageContainer extends StatelessWidget {
       required this.index,
       required this.onRefresh,
       required this.isRefresh,
-      required this.isEditable})
+      required this.isEditable, required this.isLastMessage})
       : super(key: key);
 
   @override
@@ -101,30 +102,18 @@ class MessageContainer extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  if (message.audioUrl != null && message.audioUrl!.isNotEmpty)
+                if (message.audioUrl != null && message.audioUrl!.isNotEmpty)
                     AudioPlayerWidget(key: UniqueKey(), url: message.audioUrl!),
                   Padding(
                     padding:
                         EdgeInsets.fromLTRB(16, isUserMessage ? 8 : 2, 8, 8),
-                    child: isUserMessage
-                        ? Text(
-                            message.text,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                            ),
-                          )
-                        : DefaultTextStyle(
-                            style:
-                                TextStyle(fontSize: 16.0, color: Colors.black),
-                            child: AnimatedTextKit(
-                              animatedTexts: [
-                                TypewriterAnimatedText(message.text),
-                              ],
-                              pause: Duration(microseconds: 2000),
-                              isRepeatingAnimation: false,
-                            ),
-                          ),
+                    child: Text(
+                      message.text,
+                      style: TextStyle(
+                        color: isUserMessage ? Colors.white : Colors.black,
+                        fontSize: 16,
+                      ),
+                    ),
                   ),
                 ],
               ),

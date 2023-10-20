@@ -232,7 +232,7 @@ class _HomeScreenState extends State<HomeScreen> {
     print("host: $HOST");
     try {
       final response = await http.post(
-        Uri.parse('http://127.0.0.1:5000/process_query'),
+        Uri.parse('${HOST}/process_query'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -602,9 +602,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       body: isFetching
-          ? Container(
-              child: Text("Loading..."),
-            )
+          ? Center(child: CircularProgressIndicator(color: Colors.blue))
           : Stack(
               children: [
                 Container(
@@ -637,19 +635,19 @@ class _HomeScreenState extends State<HomeScreen> {
                               }
 
                               int messageIndex = isLoading ? index - 1 : index;
-                              print(
-                                  "debuggung timestamp : $messageIndex for ${messages[messageIndex].timestamp} of message ${messages[messageIndex].text} with index = $messageIndex");
-                              DateTime currentDate = DateTime.now();
+                              // print(
+                              //     "debuggung timestamp : $messageIndex for ${messages[messageIndex].timestamp} of message ${messages[messageIndex].text} with index = $messageIndex");
+                              // DateTime currentDate = DateTime.now();
 
-                              threadTimestamp =
-                                  messages[messages.length - 1].timestamp;
+                              // threadTimestamp =
+                              //     messages[messages.length - 1].timestamp;
 
-                              bool isToday = threadTimestamp.day ==
-                                      currentDate.day &&
-                                  threadTimestamp.month == currentDate.month &&
-                                  threadTimestamp.year == currentDate.year;
+                              // bool isToday = threadTimestamp.day ==
+                              //         currentDate.day &&
+                              //     threadTimestamp.month == currentDate.month &&
+                              //     threadTimestamp.year == currentDate.year;
 
-                              print("checking bool: $isToday");
+                              // print("checking bool: $isToday");
 
                               // timestampHeading = isToday
                               //     ? 'Today'
@@ -670,7 +668,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 onRefresh: _refreshMessage,
                                 index: messageIndex,
                                 isRefresh: messageIndex == 0 ? true : false,
-                                isEditable: messageIndex == 1 ? true : false,
+                                isEditable: messageIndex == 1 ? true : false, isLastMessage: messageIndex == messages.length - 1 ? true : false,
                               );
                             },
                           ),
@@ -1221,10 +1219,10 @@ class _MessageListItemState extends State<MessageListItem> {
 
   Future<void> _updateFavorite(bool favStatus) async {
     print('Updating favorite thread status... to $favStatus');
-    // String HOST = dotenv.env['HOST']!;
+    String HOST = dotenv.env['HOST']!;
 
     var response = await http.post(
-      Uri.parse('http://localhost:5000/update-favorite-thread'),
+      Uri.parse('${HOST}/update-favorite-thread'),
       body: jsonEncode({
         'userId': widget.userId,
         'threadId': widget.threadId,
