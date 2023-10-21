@@ -51,7 +51,6 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isLoading = false;
   bool isFirstMessageSent = false;
 
-
   bool isFavorite = false;
   String currentThreadId = '';
   String currentThreadName = '';
@@ -69,15 +68,14 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    isFetching = true; 
+    isFetching = true;
 
     _generateNewThreadId();
     _loadUserId().then((_) {
       _fetchThreads().then((_) {
-       
         if (mounted) {
           setState(() {
-            isFetching = false; 
+            isFetching = false;
           });
         }
       });
@@ -667,7 +665,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                 onRefresh: _refreshMessage,
                                 index: messageIndex,
                                 isRefresh: messageIndex == 0 ? true : false,
-                                isEditable: messageIndex == 1 ? true : false, isLastMessage: messageIndex == messages.length - 1 ? true : false,
+                                isEditable: messageIndex == 1 ? true : false,
+                                isLastMessage:
+                                    messageIndex == messages.length - 1
+                                        ? true
+                                        : false,
                               );
                             },
                           ),
@@ -772,10 +774,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                                     ),
                                                     onPressed: () {
                                                       setState(() {
-                                                        qColor = Color.fromARGB(255,
-                                                                248, 208, 134)
+                                                        qColor = Color.fromARGB(
+                                                                255,
+                                                                248,
+                                                                208,
+                                                                134)
                                                             .withOpacity(1);
-                                                        mColor = Colors.transparent;
+                                                        mColor =
+                                                            Colors.transparent;
                                                       });
                                                     },
                                                     child: Text(
@@ -819,26 +825,25 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   width: 3, color: mColor),
                                             ),
                                             child: Container(
-                                              
                                               margin: EdgeInsets.all(4),
                                               decoration: BoxDecoration(
-                                                  gradient: LinearGradient(
-                                                    colors: [
-                                                      Color(
-                                                          0xFFFFBCD4), // #FFBCD4
-                                                      Color(
-                                                          0xFFFFF3F8), // #FFF3F8
-                                                    ],
-                                                    stops: [
-                                                      0,
-                                                      1,
-                                                    ],
-                                                    begin: Alignment.centerLeft,
-                                                    end: Alignment.centerRight,
-                                                  ),
-                                                  borderRadius:
-                                                      BorderRadius.circular(5),
+                                                gradient: LinearGradient(
+                                                  colors: [
+                                                    Color(
+                                                        0xFFFFBCD4), // #FFBCD4
+                                                    Color(
+                                                        0xFFFFF3F8), // #FFF3F8
+                                                  ],
+                                                  stops: [
+                                                    0,
+                                                    1,
+                                                  ],
+                                                  begin: Alignment.centerLeft,
+                                                  end: Alignment.centerRight,
                                                 ),
+                                                borderRadius:
+                                                    BorderRadius.circular(5),
+                                              ),
                                               child: Row(
                                                 children: [
                                                   ElevatedButton(
@@ -874,8 +879,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                                     ),
                                                     onPressed: () {
                                                       setState(() {
-                                                         mColor = Color(0xFFFFBCD4).withOpacity(1);
-      qColor = Colors.transparent;
+                                                        mColor =
+                                                            Color(0xFFFFBCD4)
+                                                                .withOpacity(1);
+                                                        qColor =
+                                                            Colors.transparent;
                                                       });
                                                     },
                                                     child: Text(
@@ -968,221 +976,126 @@ class _HomeScreenState extends State<HomeScreen> {
 
     print("length: ${threadsByDate.keys.length}");
 
-    return Container(
-      margin: EdgeInsets.fromLTRB(0, MediaQuery.of(context).padding.top, 0, 0),
-      child: Drawer(
-        child: AbsorbPointer(
-          absorbing: false,
-          child: Container(
-            decoration: const BoxDecoration(
-              border: Border(
-                left: BorderSide(
-                  color: Color(0xFF7356E8),
-                  width: 3.0,
+    return Drawer(
+      child: AbsorbPointer(
+        absorbing: false,
+        child: Container(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  itemCount: threadsByDate.keys.length,
+                  itemBuilder: (context, index) {
+                    String date =
+                        threadsByDate.keys.toList().reversed.elementAt(index);
+                    DateTime currentDate = DateTime.now();
+                    DateTime threadTimestamp = DateTime.parse(date);
+                    int daysDifference =
+                        currentDate.difference(threadTimestamp).inDays;
+
+                    // Define the section text based on days difference
+                    String sectionText;
+                    if (daysDifference == 0) {
+                      sectionText = 'Today';
+                    } else if (daysDifference == 1) {
+                      sectionText = 'Yesterday';
+                    } else if (daysDifference == 2) {
+                      sectionText = '2 Days Ago';
+                    } else {
+                      sectionText =
+                          DateFormat('MMMM dd, yyyy').format(threadTimestamp);
+                    }
+
+                    List<Map<dynamic, dynamic>> threadsForDate =
+                        threadsByDate[date]!;
+                    // print("timestamp debuggggg: $date and $threadsForDate");
+
+                    return Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            sectionText,
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                fontFamily: "SourceCodePro"),
+                          ),
+                        ),
+                        ...threadsForDate.reversed.map((thread) {
+                          String threadName = thread['threadName'];
+                          String threadId = thread['threadId'];
+                          bool isFavorite = thread['isFavorite'];
+                          isFav = isFavorite;
+                          print("fav debug: $isFav");
+
+                          return MessageListItem(
+                            message: threadName,
+                            userId: userId,
+                            threadId: threadId,
+                            isFavorite: isFavorite,
+                            onDelete: () {
+                              _deleteThread(threadId);
+                              messages.clear();
+                            },
+                            onTap: () {
+                              setState(() {
+                                currentThreadId = threadId;
+                                currentThreadName = threadName;
+                                messages.clear();
+                                Navigator.of(context).pop();
+                              });
+
+                              fetchMessages(userId, threadId)
+                                  .then((fetchedMessages) {
+                                setState(() {
+                                  messages.addAll(fetchedMessages
+                                      .map((messageData) {
+                                        Message inputMessage = Message(
+                                          text: messageData['input'],
+                                          sender: 'user',
+                                          timestamp: DateTime.parse(
+                                              messageData['timestamp']),
+                                          userId: userId,
+                                        );
+
+                                        Message outputMessage = Message(
+                                          text: messageData['output'],
+                                          sender: 'server',
+                                          timestamp: DateTime.parse(
+                                              messageData['timestamp']),
+                                          userId: userId,
+                                          audioUrl: messageData['audioUrl'],
+                                        );
+
+                                        return [inputMessage, outputMessage];
+                                      })
+                                      .expand((pair) => pair)
+                                      .toList()
+                                      .reversed);
+                                  isFetching = false;
+                                });
+                              }).catchError((error) {
+                                print('Error fetching messages: $error');
+                              });
+                            }, fetchThreads: () { _fetchThreads(); },
+                          );
+                        }).toList(),
+                      ],
+                    );
+                  },
                 ),
               ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Container(
-                  child: Stack(
-                    alignment: Alignment.centerLeft,
-                    children: [
-                      Positioned(
-                        left: 0,
-                        top: 0,
-                        bottom: 0,
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF7356E8),
-                            borderRadius: BorderRadius.only(
-                              bottomRight: Radius.circular(50),
-                            ),
-                          ),
-                          width: 50,
-                          height: 50,
-                          child: Padding(
-                            padding:
-                                const EdgeInsets.only(right: 10.0, bottom: 10),
-                            child: IconButton(
-                              icon: Icon(Icons.close, color: Colors.white),
-                              onPressed: () => Navigator.of(context).pop(),
-                              splashRadius: 1,
-                              hoverColor: Colors.transparent,
-                              splashColor: Colors.transparent,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 15.0),
-                        child: Center(
-                          child: Column(
-                            children: [
-                              Text(
-                                'Chat History',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 20,
-                                  fontFamily: 'Goldman',
-                                ),
-                              ),
-                              Container(
-                                margin: EdgeInsets.fromLTRB(50, 0, 30, 0),
-                                child: Divider(
-                                  thickness: 1,
-                                  color: Color(0xFF878787),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: threadsByDate.keys.length,
-                    itemBuilder: (context, index) {
-                      // print(
-                      //     "threadId = $threadId and threadName = ${threads.length}");
-
-                      // print("time debug ${threads[index]['threadTimestamp']}");
-
-                      String date =
-                          threadsByDate.keys.toList().reversed.elementAt(index);
-                      DateTime currentDate = DateTime.now();
-                      DateTime threadTimestamp = DateTime.parse(date);
-                      int daysDifference =
-                          currentDate.difference(threadTimestamp).inDays;
-
-                      // Define the section text based on days difference
-                      String sectionText;
-                      if (daysDifference == 0) {
-                        sectionText = 'Today';
-                      } else if (daysDifference == 1) {
-                        sectionText = 'Yesterday';
-                      } else if (daysDifference == 2) {
-                        sectionText = '2 Days Ago';
-                      } else {
-                        sectionText =
-                            DateFormat('MMMM dd, yyyy').format(threadTimestamp);
-                      }
-
-                      List<Map<dynamic, dynamic>> threadsForDate =
-                          threadsByDate[date]!;
-                      // print("timestamp debuggggg: $date and $threadsForDate");
-
-                      return Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Text(
-                              sectionText,
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                  fontFamily: "SourceCodePro"),
-                            ),
-                          ),
-                          ...threadsForDate.reversed.map((thread) {
-                            String threadName = thread['threadName'];
-                            String threadId = thread['threadId'];
-                            bool isFavorite = thread['isFavorite'];
-
-                            return MessageListItem(
-                              message: threadName,
-                              userId: userId,
-                              threadId: threadId,
-                              isFavorite: isFavorite,
-                              onDelete: () {
-                                _deleteThread(threadId);
-                                messages.clear();
-                              },
-                              onTap: () {
-                                setState(() {
-                                  currentThreadId = threadId;
-                                  currentThreadName = threadName;
-                                  messages.clear();
-                                  Navigator.of(context).pop();
-                                });
-
-                                fetchMessages(userId, threadId)
-                                    .then((fetchedMessages) {
-                                  setState(() {
-                                    messages.addAll(fetchedMessages
-                                        .map((messageData) {
-                                          Message inputMessage = Message(
-                                            text: messageData['input'],
-                                            sender: 'user',
-                                            timestamp: DateTime.parse(
-                                                messageData['timestamp']),
-                                            userId: userId,
-                                          );
-
-                                          Message outputMessage = Message(
-                                            text: messageData['output'],
-                                            sender: 'server',
-                                            timestamp: DateTime.parse(
-                                                messageData['timestamp']),
-                                            userId: userId,
-                                            audioUrl: messageData['audioUrl'],
-                                          );
-
-                                          return [inputMessage, outputMessage];
-                                        })
-                                        .expand((pair) => pair)
-                                        .toList()
-                                        .reversed);
-                                    isFetching = false;
-                                  });
-                                }).catchError((error) {
-                                  print('Error fetching messages: $error');
-                                });
-                              },
-                            );
-                          }).toList(),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      Navigator.of(context).pop();
-                      _generateNewThreadId();
-                      print("New thread ID generated: $currentThreadId");
-                      print(threads);
-                      print("Current threads: $threads");
-                      messages.clear();
-                    });
-                  },
-                  style: ElevatedButton.styleFrom(
-                    primary: Color(0xFFEBEEFD),
-                    elevation: 0,
-                    padding: EdgeInsets.all(2),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(0),
-                    ),
-                  ),
-                  child: Text(
-                    ' + ',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 30,
-                    ),
-                  ),
-                )
-              ],
-            ),
+            ],
           ),
         ),
       ),
     );
   }
+
+  late bool isFav;
+  
 }
 
 class MessageListItem extends StatefulWidget {
@@ -1192,6 +1105,7 @@ class MessageListItem extends StatefulWidget {
   final String userId;
   final String threadId;
   final Function() onDelete;
+  final Function() fetchThreads;
 
   const MessageListItem({
     required this.message,
@@ -1201,6 +1115,7 @@ class MessageListItem extends StatefulWidget {
     required this.userId,
     required this.threadId,
     required this.onDelete,
+    required this.fetchThreads,
   }) : super(key: key);
 
   @override
@@ -1208,15 +1123,15 @@ class MessageListItem extends StatefulWidget {
 }
 
 class _MessageListItemState extends State<MessageListItem> {
-  late bool isFavorite;
+  late bool isFav;
 
   @override
   void initState() {
     super.initState();
-    isFavorite = widget.isFavorite;
+    isFav = widget.isFavorite;
   }
 
-  Future<void> _updateFavorite(bool favStatus) async {
+ Future<void> _updateFavorite(bool favStatus) async {
     print('Updating favorite thread status... to $favStatus');
     String HOST = dotenv.env['HOST']!;
 
@@ -1233,14 +1148,14 @@ class _MessageListItemState extends State<MessageListItem> {
     var data = json.decode(response.body);
     print('Response from backend: $data');
     if (data['success']) {
+      widget.fetchThreads();
       setState(() {
-        isFavorite = favStatus;
+        isFav = !isFav;
       });
     } else {
       print('Error updating favorite status: ${data['error']}');
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return InkWell(
@@ -1248,20 +1163,18 @@ class _MessageListItemState extends State<MessageListItem> {
       child: ListTile(
         leading: IconButton(
           icon: Icon(
-            isFavorite ? Icons.favorite : Icons.favorite_border,
-            color: isFavorite ? Colors.red : Colors.grey,
+            isFav ? Icons.favorite : Icons.favorite_border,
+            color: isFav ? Colors.red : Colors.grey,
           ),
-          onPressed: () {
-            setState(() {
-              _updateFavorite(!isFavorite);
-            });
+          onPressed: () async {
+            await _updateFavorite(!isFav);
           },
         ),
         title: Text(widget.message),
         trailing: IconButton(
             icon: Icon(
               Icons.delete,
-              color: Colors.grey, 
+              color: Colors.grey,
             ),
             onPressed: widget.onDelete),
       ),
