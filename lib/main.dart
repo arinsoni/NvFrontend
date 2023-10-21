@@ -11,7 +11,6 @@ import 'package:nvsirai/widgets/message_container.dart';
 import 'package:nvsirai/widgets/message_input.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
-import 'package:nvsirai/widgets/message_list_item.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -70,15 +69,15 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    isFetching = true; // Set isFetching to true here
+    isFetching = true; 
 
     _generateNewThreadId();
     _loadUserId().then((_) {
       _fetchThreads().then((_) {
-        // Wait for _fetchThreads to complete
+       
         if (mounted) {
           setState(() {
-            isFetching = false; // Then set isFetching to false
+            isFetching = false; 
           });
         }
       });
@@ -1262,7 +1261,7 @@ class _MessageListItemState extends State<MessageListItem> {
         trailing: IconButton(
             icon: Icon(
               Icons.delete,
-              color: Colors.grey, // You can choose your own color
+              color: Colors.grey, 
             ),
             onPressed: widget.onDelete),
       ),
