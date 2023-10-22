@@ -88,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
     currentThreadId = base64UrlEncode(values);
   }
 
-  List<Map<String, dynamic>> threads = [];
+  List<Thread> threads = [];
 
   Future<void> _fetchThreads() async {
     print("fetching threads...");
@@ -106,25 +106,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (data is List) {
         setState(() {
-          threads = data
-              .map((thread) {
-                if (thread is Map) {
-                  print("map $thread");
-                  return {
-                    'threadId': thread['threadId'] as String,
-                    'threadName': thread['threadName'] as String,
-                    'isFavorite': thread['isFavorite'] as bool,
-                    'threadTimestamp': thread['lastMessageTimestamp']
-                  };
-                } else {
-                  return null;
-                }
-              })
-              .where((thread) => thread != null)
-              .cast<Map<String, dynamic>>()
-              .toList();
+          threads = data.map<Thread>((thread) {
+            print("Raw thread data: ${thread.runtimeType}");
 
-          print("threads fetched: $threads");
+            if (thread is Map<String, dynamic>) {
+              print('threadId: ${thread['threadId']}');
+              print('threadName: ${thread['threadName']}');
+              print('isFavorite: ${thread['isFavorite']}');
+              print('lastMessageTimestamp: ${thread['lastMessageTimestamp']}');
+              return Thread.fromMap(thread);
+            } else {
+              throw Exception('Invalid thread data');
+            }
+          }).toList();
+
+          print("threads fetched: ${threads}");
         });
       } else {
         print("Unexpected data format received");
@@ -134,12 +130,11 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Map<String, List<Map<dynamic, dynamic>>> organizeThreadsByDate(
-      List<Map> threads) {
-    Map<String, List<Map<dynamic, dynamic>>> organized = {};
+  Map<String, List<Thread>> organizeThreadsByDate(List<Thread> threads) {
+    Map<String, List<Thread>> organized = {};
 
     for (var thread in threads) {
-      DateTime lastMessageDate = DateTime.parse(thread['threadTimestamp']);
+      DateTime lastMessageDate = DateTime.parse(thread.threadTimestamp);
       String dateKey = DateFormat('yyyy-MM-dd').format(lastMessageDate);
 
       if (organized[dateKey] == null) {
@@ -177,7 +172,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (isDeleted) {
       setState(() {
-        threads.removeWhere((thread) => thread['threadId'] == threadId);
+        threads.removeWhere((thread) => thread.threadId == threadId);
         Navigator.of(context).pop();
       });
       print('Thread deleted successfully');
@@ -317,13 +312,15 @@ class _HomeScreenState extends State<HomeScreen> {
         audioUrl: apiResponse['audio_response'],
       );
 
-      final matchingThread = threads.firstWhere(
-        (thread) => thread['threadId'] == currentThreadId,
-        orElse: () => <String, dynamic>{},
-      );
-      print("debug $matchingThread");
+      Thread? matchingThread;
+      for (var thread in threads) {
+        if (thread.threadId == currentThreadId) {
+          matchingThread = thread;
+          break;
+        }
+      }
 
-      if (matchingThread.isNotEmpty) {
+      if (matchingThread != null) {
         print('Matching Thread Data: $matchingThread');
       } else {
         print('No matching thread data found.');
@@ -970,9 +967,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (userId.isEmpty) {
       return Center(child: CircularProgressIndicator());
     }
-    Map<String, List<Map<dynamic, dynamic>>> threadsByDate =
-        organizeThreadsByDate(threads);
-    ;
+    Map<String, List<Thread>> threadsByDate = organizeThreadsByDate(threads);
 
     print("length: ${threadsByDate.keys.length}");
 
@@ -1007,8 +1002,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           DateFormat('MMMM dd, yyyy').format(threadTimestamp);
                     }
 
-                    List<Map<dynamic, dynamic>> threadsForDate =
-                        threadsByDate[date]!;
+                    List<Thread> threadsForDate = threadsByDate[date]!;
+
                     // print("timestamp debuggggg: $date and $threadsForDate");
 
                     return Column(
@@ -1024,11 +1019,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         ...threadsForDate.reversed.map((thread) {
-                          String threadName = thread['threadName'];
-                          String threadId = thread['threadId'];
-                          bool isFavorite = thread['isFavorite'];
+                          String threadName = thread.threadName;
+                          String threadId = thread.threadId;
+                          bool isFavorite = thread.isFavorite;
                           isFav = isFavorite;
-                          print("fav debug: $isFav");
+                          print("fav debug: $thread");
 
                           return MessageListItem(
                             message: threadName,
@@ -1079,7 +1074,10 @@ class _HomeScreenState extends State<HomeScreen> {
                               }).catchError((error) {
                                 print('Error fetching messages: $error');
                               });
-                            }, fetchThreads: () { _fetchThreads(); },
+                            },
+                            fetchThreads: () {
+                              _fetchThreads();
+                            },
                           );
                         }).toList(),
                       ],
@@ -1087,6 +1085,33 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
               ),
+              ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      Navigator.of(context).pop();
+                      _generateNewThreadId();
+                      print("New thread ID generated: $currentThreadId");
+                      print(threads);
+                      print("Current threads: $threads");
+                      messages.clear();
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(
+                    primary: Color(0xFFEBEEFD),
+                    elevation: 0,
+                    padding: EdgeInsets.all(2),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(0),
+                    ),
+                  ),
+                  child: Text(
+                    ' + ',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 30,
+                    ),
+                  ),
+                )
             ],
           ),
         ),
@@ -1095,7 +1120,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   late bool isFav;
-  
 }
 
 class MessageListItem extends StatefulWidget {
@@ -1131,7 +1155,7 @@ class _MessageListItemState extends State<MessageListItem> {
     isFav = widget.isFavorite;
   }
 
- Future<void> _updateFavorite(bool favStatus) async {
+  Future<void> _updateFavorite(bool favStatus) async {
     print('Updating favorite thread status... to $favStatus');
     String HOST = dotenv.env['HOST']!;
 
@@ -1156,6 +1180,7 @@ class _MessageListItemState extends State<MessageListItem> {
       print('Error updating favorite status: ${data['error']}');
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return InkWell(
@@ -1179,5 +1204,43 @@ class _MessageListItemState extends State<MessageListItem> {
             onPressed: widget.onDelete),
       ),
     );
+  }
+}
+
+class Thread {
+  final String threadId;
+  final String threadName;
+  final bool isFavorite;
+  final String threadTimestamp;
+
+  Thread({
+    required this.threadId,
+    required this.threadName,
+    required this.isFavorite,
+    required this.threadTimestamp,
+  });
+
+  @override
+  String toString() {
+    return 'Thread(threadId: $threadId, threadName: $threadName, isFavorite: $isFavorite, threadTimestamp: $threadTimestamp)';
+  }
+
+
+  factory Thread.fromMap(Map<String, dynamic> map) {
+    return Thread(
+        threadId: map['threadId'] ?? '', // Adding null check
+        threadName: map['threadName'] ?? '', // Adding null check
+        isFavorite: map['isFavorite'] as bool,
+        threadTimestamp: map['lastMessageTimestamp'] ?? '' // Adding null check
+        );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'threadId': threadId,
+      'threadName': threadName,
+      'isFavorite': isFavorite,
+      'threadTimestamp': threadTimestamp,
+    };
   }
 }
