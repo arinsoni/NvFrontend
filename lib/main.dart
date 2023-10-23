@@ -1,18 +1,18 @@
 import 'dart:math';
-
-import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:intl/intl.dart';
-import 'package:logger/logger.dart';
 import 'package:nvsirai/schema/message.dart';
+import 'package:nvsirai/widgets/loading_indicator.dart';
 import 'package:nvsirai/widgets/message_container.dart';
 import 'package:nvsirai/widgets/message_input.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
+import 'package:nvsirai/widgets/message_list_item.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'schema/thread.dart';
 
 Future<void> main() async {
   await dotenv.load();
@@ -42,18 +42,24 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  // Schemas
   final List<Message> messages = [];
+  List<Thread> threads = [];
 
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _messageController = TextEditingController();
+
+  // initiallization
   String originalMessage = "";
   String audioUrl = "";
-  bool isLoading = false;
-  bool isFirstMessageSent = false;
-
-  bool isFavorite = false;
+  String userId = '';
   String currentThreadId = '';
   String currentThreadName = '';
+  bool isLoading = false;
+  bool isFirstMessageSent = false;
+  bool isFavorite = false;
+  late bool isFav;
+
   String HOST = dotenv.env['HOST']!;
   DateTime threadTimestamp = DateTime.now();
 
@@ -63,422 +69,9 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isFetching = true;
   bool isNewThread = false;
 
-  String userId = '';
-
-  @override
-  void initState() {
-    super.initState();
-    isFetching = true;
-
-    _generateNewThreadId();
-    _loadUserId().then((_) {
-      _fetchThreads().then((_) {
-        if (mounted) {
-          setState(() {
-            isFetching = false;
-          });
-        }
-      });
-    });
-  }
-
-  void _generateNewThreadId() {
-    var random = Random();
-    var values = List<int>.generate(12, (i) => random.nextInt(256));
-    currentThreadId = base64UrlEncode(values);
-  }
-
-  List<Thread> threads = [];
-
-  Future<void> _fetchThreads() async {
-    print("fetching threads...");
-
-    var url = Uri.parse('${HOST}/get_threads/$userId');
-    print("API URL: $url");
-    print("userID: $userId");
-
-    var response = await http.get(url);
-    if (response.statusCode == 200) {
-      print("API response status code: 200");
-
-      var data = json.decode(response.body);
-      print("data fetched by fetchThreads: $data");
-
-      if (data is List) {
-        setState(() {
-          threads = data.map<Thread>((thread) {
-            print("Raw thread data: ${thread.runtimeType}");
-
-            if (thread is Map<String, dynamic>) {
-              print('threadId: ${thread['threadId']}');
-              print('threadName: ${thread['threadName']}');
-              print('isFavorite: ${thread['isFavorite']}');
-              print('lastMessageTimestamp: ${thread['lastMessageTimestamp']}');
-              return Thread.fromMap(thread);
-            } else {
-              throw Exception('Invalid thread data');
-            }
-          }).toList();
-
-          print("threads fetched: ${threads}");
-        });
-      } else {
-        print("Unexpected data format received");
-      }
-    } else {
-      print("API response status code: ${response.statusCode}");
-    }
-  }
-
-  Map<String, List<Thread>> organizeThreadsByDate(List<Thread> threads) {
-    Map<String, List<Thread>> organized = {};
-
-    for (var thread in threads) {
-      DateTime lastMessageDate = DateTime.parse(thread.threadTimestamp);
-      String dateKey = DateFormat('yyyy-MM-dd').format(lastMessageDate);
-
-      if (organized[dateKey] == null) {
-        organized[dateKey] = [];
-      }
-      organized[dateKey]!.add(thread);
-    }
-
-    return organized;
-  }
-
-  Future<bool> deleteThread(userId, threadId) async {
-    try {
-      print("mi gai $threadId");
-      var response = await http.post(
-        Uri.parse('${HOST}/delete_thread'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'userId': userId, 'threadId': threadId}),
-      );
-
-      if (response.statusCode == 200) {
-        return true;
-      } else {
-        print('Failed to delete thread: ${response.body}');
-        return false;
-      }
-    } catch (e) {
-      print('Error occurred while deleting thread: $e');
-      return false;
-    }
-  }
-
-  void _deleteThread(String threadId) async {
-    bool isDeleted = await deleteThread(userId, threadId);
-
-    if (isDeleted) {
-      setState(() {
-        threads.removeWhere((thread) => thread.threadId == threadId);
-        Navigator.of(context).pop();
-      });
-      print('Thread deleted successfully');
-    } else {
-      print('Failed to delete the thread');
-    }
-  }
-
-  Future<void> _loadUserId() async {
-    try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String? id = prefs.getString('user_id');
-      if (id == null) {
-        var random = Random();
-        var values = List<int>.generate(12, (i) => random.nextInt(256));
-        id = base64UrlEncode(values);
-        await prefs.setString('user_id', id);
-      }
-
-      if (mounted) {
-        // Ensure the widget is still in the tree
-        setState(() {
-          userId = id!;
-          isFetching = true; // Update this based on when you need it
-        });
-      }
-    } catch (e) {
-      print('Error loading user ID: $e');
-      setState(() {
-        isFetching = true; // Ensure the UI isn't locked in a loading state
-      });
-    }
-  }
-
-  Future<void> deleteAllAudioFiles() async {
-    final response = await http.delete(
-      Uri.parse('${HOST}/delete-audios'),
-    );
-
-    if (response.statusCode == 200) {
-      print('All audio files deleted successfully');
-    } else {
-      throw Exception('Failed to delete audio files');
-    }
-  }
-
-  Future<Map<String, dynamic>> fetchResponseFromAPI(String userInput,
-      String userId, DateTime timestamp, bool isFirstMessageSent) async {
-    print("host: $HOST");
-    try {
-      final response = await http.post(
-        Uri.parse('${HOST}/process_query'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'user_input': userInput,
-          'userId': userId,
-          'timestamp': timestamp.toIso8601String(),
-          'threadId': currentThreadId,
-          'isFirstMessageSent': isFirstMessageSent,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
-
-        return data;
-      } else {
-        throw Exception(
-            'Failed to load response: ${response.statusCode} - ${response.reasonPhrase}');
-      }
-    } catch (e) {
-      throw Exception('Failed to make the API request: $e');
-    }
-  }
-
-  void _sendMessage() async {
-    if (isLoading) {
-      return;
-    }
-
-    String messageText = _messageController.text.trim();
-
-    if (messageText.isNotEmpty) {
-      DateTime now = DateTime.now();
-
-      print("All messages ${messages}");
-      setState(() {
-        // audioUrl = '';
-
-        if (originalMessage.isNotEmpty) {
-          int index = messages.indexWhere(
-              (m) => m.text == originalMessage && m.sender == 'user');
-
-          print("index $index");
-
-          if (index != -1) {
-            deleteMessage(userId, currentThreadId, index);
-            messages[index].text = messageText;
-
-            if (index - 1 >= 0 && messages[index - 1].sender == 'server') {
-              messages.removeAt(index - 1);
-            }
-          }
-
-          originalMessage = "";
-        } else {
-          Message message = Message(
-            text: messageText,
-            sender: 'user',
-            timestamp: now,
-            userId: userId,
-            threadId: currentThreadId,
-          );
-          messages.insert(0, message);
-          if (messages.isNotEmpty) {
-            isFirstMessageSent = true;
-          }
-          _messageController.clear();
-          isLoading = true;
-        }
-
-        _messageController.clear();
-        isLoading = true;
-      });
-
-      Map<String, dynamic> apiResponse = await fetchResponseFromAPI(
-          messageText, userId, now, isFirstMessageSent);
-      now = DateTime.now();
-
-      Message responseMessage = Message(
-        text: apiResponse['text_response'],
-        sender: 'server',
-        timestamp: now,
-        userId: userId,
-        audioUrl: apiResponse['audio_response'],
-      );
-
-      Thread? matchingThread;
-      for (var thread in threads) {
-        if (thread.threadId == currentThreadId) {
-          matchingThread = thread;
-          break;
-        }
-      }
-
-      if (matchingThread != null) {
-        print('Matching Thread Data: $matchingThread');
-      } else {
-        print('No matching thread data found.');
-        _fetchThreads();
-      }
-
-      setState(() {
-        messages.insert(0, responseMessage);
-        isLoading = false;
-      });
-    }
-  }
-
-  Future<void> deleteMessage(String userId, String threadId, int index) async {
-    // }
-    try {
-      var response = await http.post(
-        Uri.parse('${HOST}/delete_message'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'userId': userId,
-          'threadId': threadId,
-          'index': index,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        print('Message deleted successfully');
-      } else {
-        print('Failed to delete message: ${response.body}');
-      }
-    } catch (e) {
-      print('Error occurred while deleting message: $e');
-    }
-  }
-
-  void mySendMessageFunction(String message) {
-    _messageController.text = message;
-    _sendMessage();
-  }
-
-  void _refreshMessage(int index) async {
-    if (isLoading) {
-      return;
-    }
-
-    Message messageToRefresh = messages[index + 1];
-    deleteMessage(userId, currentThreadId, index);
-    DateTime now = DateTime.now();
-
-    setState(() {
-      messages.removeAt(index);
-      isLoading = true;
-    });
-
-    Map<String, dynamic> apiResponse = await fetchResponseFromAPI(
-        messageToRefresh.text, messageToRefresh.userId, now, false);
-
-    Message refreshedMessage = Message(
-        text: apiResponse['text_response'],
-        sender: 'server',
-        timestamp: now,
-        userId: messageToRefresh.userId,
-        audioUrl: apiResponse['audio_response']);
-
-    setState(() {
-      messages.insert(0, refreshedMessage);
-
-      if (apiResponse['audio_response'] != null) {
-        audioUrl = apiResponse['audio_response'];
-      }
-
-      isLoading = false;
-    });
-  }
-
-  // void _clearHistory() async {
-  //   print('Clearing history');
-  //   try {
-  //     await deleteAllAudioFiles();
-  //     print('Files deleted successfully');
-
-  //     setState(() {
-  //       messages.clear();
-  //       isFirstMessageSent = false;
-  //     });
-
-  //     print('Messages cleared');
-  //   } catch (e) {
-  //     print('Error clearing history: $e');
-  //   }
-  // }
-
-  void prettyPrint(Map<String, dynamic> map) {
-    map.forEach((key, value) {
-      print('$key: ');
-      for (var item in value) {
-        print('  $item');
-      }
-    });
-  }
-
-  // void _isQuestion() {
-  //   setState(() {
-  //     print("callled");
-  //     qColor = Color.fromARGB(255, 248, 208, 134).withOpacity(1);
-  //     mColor = Colors.transparent;
-  //   });
-  // }
-
-  // void _isMotivation() {
-  //   setState(() {
-  //     print("callled");
-  //     mColor = Color(0xFFFFBCD4).withOpacity(1);
-  //     qColor = Colors.transparent;
-  //   });
-  // }
-
-  Future<List<Map<String, dynamic>>> fetchMessages(String userId,
-      [String? threadId]) async {
-    if (userId != null) {
-      print("UserId: $userId");
-      var url = Uri.parse('${HOST}/get_messages/$userId/$threadId');
-      print("URL: $url");
-
-      try {
-        final response =
-            await http.get(url, headers: {'Content-Type': 'application/json'});
-
-        if (response.statusCode == 200) {
-          var data = json.decode(response.body);
-
-          if (data is Map<String, dynamic> && data['messages'] is List) {
-            return List.from(data['messages']);
-          } else {
-            throw Exception('Response data is not in expected format');
-          }
-        } else {
-          throw Exception('Failed to load messages from the server');
-        }
-      } catch (e) {
-        throw Exception('Failed to make the API request for gteMsg: $e');
-      }
-    } else {
-      return [];
-    }
-  }
-
-// Assuming getLastMessageTimestamp is a function that returns the timestamp of the last message in a thread.
-
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
-    double screenHeight = MediaQuery.of(context).size.height;
-    String desc =
-        "some response text here yes, count that as an answer. some response text here yes, count that as an answer. some response text here yes, ";
-    final GlobalKey imageKey = GlobalKey();
-    final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
     return Scaffold(
       // key: _scaffoldKey,
@@ -625,30 +218,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             reverse: true,
                             itemBuilder: (context, index) {
                               if (isLoading && index == 0) {
-                                return _buildLoadingIndicator();
+                                return TypingIndicator();
                               }
 
                               int messageIndex = isLoading ? index - 1 : index;
-                              // print(
-                              //     "debuggung timestamp : $messageIndex for ${messages[messageIndex].timestamp} of message ${messages[messageIndex].text} with index = $messageIndex");
-                              // DateTime currentDate = DateTime.now();
-
-                              // threadTimestamp =
-                              //     messages[messages.length - 1].timestamp;
-
-                              // bool isToday = threadTimestamp.day ==
-                              //         currentDate.day &&
-                              //     threadTimestamp.month == currentDate.month &&
-                              //     threadTimestamp.year == currentDate.year;
-
-                              // print("checking bool: $isToday");
-
-                              // timestampHeading = isToday
-                              //     ? 'Today'
-                              //     : DateFormat('MMMM yyyy').format(threadTimestamp);
-
-                              // print(
-                              //     "threadTimestamp = $threadTimestamp for nessage = ${messages[messages.length - 1].text}");
                               print("\n");
                               return MessageContainer(
                                 message: messages[messageIndex],
@@ -917,19 +490,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 ),
                               ),
-                              // Padding(
-                              //   padding: EdgeInsets.only(
-                              //       right: screenWidth * 0.1,
-                              //       top: 10,
-                              //       left: 0.1 * screenWidth),
-                              //   child: Text(
-                              //     desc,
-                              //     textAlign: TextAlign.center,
-                              //     style: const TextStyle(
-                              //       color: Color(0xFF878787),
-                              //     ),
-                              //   ),
-                              // ),
                             ],
                           ),
                         ),
@@ -937,29 +497,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     : SizedBox(),
               ],
             ),
-    );
-  }
-
-  Widget _buildLoadingIndicator() {
-    return const Padding(
-      padding: EdgeInsets.all(10.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          SpinKitWave(
-            color: Color(0xFF7356E8),
-            size: 20.0,
-          ),
-          SizedBox(width: 10),
-          Text(
-            'Typing...',
-            style: TextStyle(
-                fontStyle: FontStyle.italic,
-                fontSize: 20,
-                color: Color(0xFF9999999E)),
-          ),
-        ],
-      ),
     );
   }
 
@@ -975,15 +512,80 @@ class _HomeScreenState extends State<HomeScreen> {
       child: AbsorbPointer(
         absorbing: false,
         child: Container(
+          decoration: const BoxDecoration(
+              border: Border(
+                left: BorderSide(
+                  color: Color(0xFF7356E8),
+                  width: 3.0,
+                ),
+              ),
+            ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Container(
+                  child: Stack(
+                    alignment: Alignment.centerLeft,
+                    children: [
+                      Positioned(
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF7356E8),
+                            borderRadius: BorderRadius.only(
+                              bottomRight: Radius.circular(50),
+                            ),
+                          ),
+                          width: 50,
+                          height: 50,
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.only(right: 10.0, bottom: 10),
+                            child: IconButton(
+                              icon: Icon(Icons.close, color: Colors.white),
+                              onPressed: () => Navigator.of(context).pop(),
+                              splashRadius: 1,
+                              hoverColor: Colors.transparent,
+                              splashColor: Colors.transparent,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 15.0),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              Text(
+                                'Chat History',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 20,
+                                  fontFamily: 'Goldman',
+                                ),
+                              ),
+                              Container(
+                                margin: EdgeInsets.fromLTRB(50, 0, 30, 0),
+                                child: Divider(
+                                  thickness: 1,
+                                  color: Color(0xFF878787),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               Expanded(
                 child: ListView.builder(
                   itemCount: threadsByDate.keys.length,
                   itemBuilder: (context, index) {
                     String date =
-                        threadsByDate.keys.toList().reversed.elementAt(index);
+                        threadsByDate.keys.toList().elementAt(index);
                     DateTime currentDate = DateTime.now();
                     DateTime threadTimestamp = DateTime.parse(date);
                     int daysDifference =
@@ -1086,32 +688,32 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      Navigator.of(context).pop();
-                      _generateNewThreadId();
-                      print("New thread ID generated: $currentThreadId");
-                      print(threads);
-                      print("Current threads: $threads");
-                      messages.clear();
-                    });
-                  },
-                  style: ElevatedButton.styleFrom(
-                    primary: Color(0xFFEBEEFD),
-                    elevation: 0,
-                    padding: EdgeInsets.all(2),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(0),
-                    ),
+                onPressed: () {
+                  setState(() {
+                    Navigator.of(context).pop();
+                    _generateNewThreadId();
+                    print("New thread ID generated: $currentThreadId");
+                    print(threads);
+                    print("Current threads: $threads");
+                    messages.clear();
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  primary: Color(0xFFEBEEFD),
+                  elevation: 0,
+                  padding: EdgeInsets.all(2),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(0),
                   ),
-                  child: Text(
-                    ' + ',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 30,
-                    ),
+                ),
+                child: Text(
+                  ' + ',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 30,
                   ),
-                )
+                ),
+              )
             ],
           ),
         ),
@@ -1119,128 +721,365 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  late bool isFav;
-}
-
-class MessageListItem extends StatefulWidget {
-  final String message;
-  final bool isFavorite;
-  final Function() onTap;
-  final String userId;
-  final String threadId;
-  final Function() onDelete;
-  final Function() fetchThreads;
-
-  const MessageListItem({
-    required this.message,
-    required this.isFavorite,
-    Key? key,
-    required this.onTap,
-    required this.userId,
-    required this.threadId,
-    required this.onDelete,
-    required this.fetchThreads,
-  }) : super(key: key);
-
-  @override
-  _MessageListItemState createState() => _MessageListItemState();
-}
-
-class _MessageListItemState extends State<MessageListItem> {
-  late bool isFav;
-
   @override
   void initState() {
     super.initState();
-    isFav = widget.isFavorite;
+    isFetching = true;
+
+    _generateNewThreadId();
+    _loadUserId().then((_) {
+      _fetchThreads().then((_) {
+        if (mounted) {
+          setState(() {
+            isFetching = false;
+          });
+        }
+      });
+    });
   }
 
-  Future<void> _updateFavorite(bool favStatus) async {
-    print('Updating favorite thread status... to $favStatus');
-    String HOST = dotenv.env['HOST']!;
+  void _generateNewThreadId() {
+    var random = Random();
+    var values = List<int>.generate(12, (i) => random.nextInt(256));
+    currentThreadId = base64UrlEncode(values);
+  }
 
-    var response = await http.post(
-      Uri.parse('${HOST}/update-favorite-thread'),
-      body: jsonEncode({
-        'userId': widget.userId,
-        'threadId': widget.threadId,
-        'isFavorite': favStatus,
-      }),
-      headers: {"Content-Type": "application/json"},
-    );
+  Future<void> _fetchThreads() async {
+    print("fetching threads...");
 
-    var data = json.decode(response.body);
-    print('Response from backend: $data');
-    if (data['success']) {
-      widget.fetchThreads();
-      setState(() {
-        isFav = !isFav;
-      });
+    var url = Uri.parse('${HOST}/$userId/get_threads');
+    print("API URL: $url");
+    print("userID: $userId");
+
+    var response = await http.get(url);
+    print("fetch threads:  ${response.body}");
+    if (response.statusCode == 200) {
+      print("API response status code: 200");
+
+      var data = json.decode(response.body);
+      print("data fetched by fetchThreads: $data");
+
+      if (data is List) {
+        setState(() {
+          threads = data.map<Thread>((thread) {
+            print("Raw thread data: ${thread.runtimeType}");
+
+            if (thread is Map<String, dynamic>) {
+              print('threadId: ${thread['threadId']}');
+              print('threadName: ${thread['threadName']}');
+              print('isFavorite: ${thread['isFavorite']}');
+              print('lastMessageTimestamp: ${thread['lastMessageTimestamp']}');
+              return Thread.fromMap(thread);
+            } else {
+              throw Exception('Invalid thread data');
+            }
+          }).toList();
+
+          print("threads fetched: ${threads}");
+        });
+      } else {
+        print("Unexpected data format received");
+      }
     } else {
-      print('Error updating favorite status: ${data['error']}');
+      print("API response status code: ${response.statusCode}");
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: widget.onTap,
-      child: ListTile(
-        leading: IconButton(
-          icon: Icon(
-            isFav ? Icons.favorite : Icons.favorite_border,
-            color: isFav ? Colors.red : Colors.grey,
-          ),
-          onPressed: () async {
-            await _updateFavorite(!isFav);
-          },
-        ),
-        title: Text(widget.message),
-        trailing: IconButton(
-            icon: Icon(
-              Icons.delete,
-              color: Colors.grey,
-            ),
-            onPressed: widget.onDelete),
-      ),
+  Map<String, List<Thread>> organizeThreadsByDate(List<Thread> threads) {
+    Map<String, List<Thread>> organized = {};
+
+    for (var thread in threads) {
+      DateTime lastMessageDate = DateTime.parse(thread.threadTimestamp);
+      String dateKey = DateFormat('yyyy-MM-dd').format(lastMessageDate);
+
+      if (organized[dateKey] == null) {
+        organized[dateKey] = [];
+      }
+      organized[dateKey]!.add(thread);
+    }
+
+    return organized;
+  }
+
+  Future<bool> deleteThread(userId, threadId) async {
+    try {
+      print("mi gai $threadId");
+      var response = await http.post(
+        Uri.parse('${HOST}/delete_thread'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'userId': userId, 'threadId': threadId}),
+      );
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        print('Failed to delete thread: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('Error occurred while deleting thread: $e');
+      return false;
+    }
+  }
+
+  void _deleteThread(String threadId) async {
+    bool isDeleted = await deleteThread(userId, threadId);
+
+    if (isDeleted) {
+      setState(() {
+        threads.removeWhere((thread) => thread.threadId == threadId);
+        Navigator.of(context).pop();
+      });
+      print('Thread deleted successfully');
+    } else {
+      print('Failed to delete the thread');
+    }
+  }
+
+  Future<void> _loadUserId() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? id = prefs.getString('user_id');
+      if (id == null) {
+        var random = Random();
+        var values = List<int>.generate(12, (i) => random.nextInt(256));
+        id = base64UrlEncode(values);
+        await prefs.setString('user_id', id);
+      }
+
+      if (mounted) {
+        // Ensure the widget is still in the tree
+        setState(() {
+          userId = id!;
+          isFetching = true; // Update this based on when you need it
+        });
+      }
+    } catch (e) {
+      print('Error loading user ID: $e');
+      setState(() {
+        isFetching = true; // Ensure the UI isn't locked in a loading state
+      });
+    }
+  }
+
+  Future<void> deleteAllAudioFiles() async {
+    final response = await http.delete(
+      Uri.parse('${HOST}/delete-audios'),
     );
-  }
-}
 
-class Thread {
-  final String threadId;
-  final String threadName;
-  final bool isFavorite;
-  final String threadTimestamp;
-
-  Thread({
-    required this.threadId,
-    required this.threadName,
-    required this.isFavorite,
-    required this.threadTimestamp,
-  });
-
-  @override
-  String toString() {
-    return 'Thread(threadId: $threadId, threadName: $threadName, isFavorite: $isFavorite, threadTimestamp: $threadTimestamp)';
+    if (response.statusCode == 200) {
+      print('All audio files deleted successfully');
+    } else {
+      throw Exception('Failed to delete audio files');
+    }
   }
 
+  Future<Map<String, dynamic>> fetchResponseFromAPI(String userInput,
+      String userId, DateTime timestamp, bool isFirstMessageSent) async {
+    print("userid in process enq: $userId");
+    try {
 
-  factory Thread.fromMap(Map<String, dynamic> map) {
-    return Thread(
-        threadId: map['threadId'] ?? '', // Adding null check
-        threadName: map['threadName'] ?? '', // Adding null check
-        isFavorite: map['isFavorite'] as bool,
-        threadTimestamp: map['lastMessageTimestamp'] ?? '' // Adding null check
-        );
+      final response = await http.post(
+        Uri.parse('${HOST}/$userId/process_query'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'user_input': userInput,
+          'userId': userId,
+          'timestamp': timestamp.toIso8601String(),
+          'threadId': currentThreadId,
+          'isFirstMessageSent': isFirstMessageSent,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+
+        return data;
+      } else {
+        throw Exception(
+            'Failed to load response: ${response.statusCode} - ${response.reasonPhrase}');
+      }
+    } catch (e) {
+      throw Exception('Failed to make the API request: $e');
+    }
   }
 
-  Map<String, dynamic> toMap() {
-    return {
-      'threadId': threadId,
-      'threadName': threadName,
-      'isFavorite': isFavorite,
-      'threadTimestamp': threadTimestamp,
-    };
+  void _sendMessage() async {
+    if (isLoading) {
+      return;
+    }
+
+    String messageText = _messageController.text.trim();
+
+    if (messageText.isNotEmpty) {
+      DateTime now = DateTime.now();
+
+      print("All messages ${messages}");
+      setState(() {
+        // audioUrl = '';
+
+        if (originalMessage.isNotEmpty) {
+          int index = messages.indexWhere(
+              (m) => m.text == originalMessage && m.sender == 'user');
+
+          print("index $index");
+
+          if (index != -1) {
+            deleteMessage(userId, currentThreadId, index);
+            messages[index].text = messageText;
+
+            if (index - 1 >= 0 && messages[index - 1].sender == 'server') {
+              messages.removeAt(index - 1);
+            }
+          }
+
+          originalMessage = "";
+        } else {
+          Message message = Message(
+            text: messageText,
+            sender: 'user',
+            timestamp: now,
+            userId: userId,
+            threadId: currentThreadId,
+          );
+          messages.insert(0, message);
+          if (messages.isNotEmpty) {
+            isFirstMessageSent = true;
+          }
+          _messageController.clear();
+          isLoading = true;
+        }
+
+        _messageController.clear();
+        isLoading = true;
+      });
+
+      Map<String, dynamic> apiResponse = await fetchResponseFromAPI(
+          messageText, userId, now, isFirstMessageSent);
+      now = DateTime.now();
+
+      Message responseMessage = Message(
+        text: apiResponse['text_response'],
+        sender: 'server',
+        timestamp: now,
+        userId: userId,
+        audioUrl: apiResponse['audio_response'],
+      );
+
+      Thread? matchingThread;
+      for (var thread in threads) {
+        if (thread.threadId == currentThreadId) {
+          matchingThread = thread;
+          break;
+        }
+      }
+
+      if (matchingThread != null) {
+        print('Matching Thread Data: $matchingThread');
+      } else {
+        print('No matching thread data found.');
+        _fetchThreads();
+      }
+
+      setState(() {
+        messages.insert(0, responseMessage);
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> deleteMessage(String userId, String threadId, int index) async {
+    // }
+    try {
+      var response = await http.post(
+        Uri.parse('${HOST}/delete_message'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'userId': userId,
+          'threadId': threadId,
+          'index': index,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('Message deleted successfully');
+      } else {
+        print('Failed to delete message: ${response.body}');
+      }
+    } catch (e) {
+      print('Error occurred while deleting message: $e');
+    }
+  }
+
+  void mySendMessageFunction(String message) {
+    _messageController.text = message;
+    _sendMessage();
+  }
+
+  void _refreshMessage(int index) async {
+    if (isLoading) {
+      return;
+    }
+
+    Message messageToRefresh = messages[index + 1];
+    deleteMessage(userId, currentThreadId, index);
+    DateTime now = DateTime.now();
+
+    setState(() {
+      messages.removeAt(index);
+      isLoading = true;
+    });
+
+    Map<String, dynamic> apiResponse = await fetchResponseFromAPI(
+        messageToRefresh.text, messageToRefresh.userId, now, false);
+
+    Message refreshedMessage = Message(
+        text: apiResponse['text_response'],
+        sender: 'server',
+        timestamp: now,
+        userId: messageToRefresh.userId,
+        audioUrl: apiResponse['audio_response']);
+
+    setState(() {
+      messages.insert(0, refreshedMessage);
+
+      if (apiResponse['audio_response'] != null) {
+        audioUrl = apiResponse['audio_response'];
+      }
+
+      isLoading = false;
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> fetchMessages(String userId,
+      [String? threadId]) async {
+    if (userId != null) {
+      print("UserId: $userId");
+      var url = Uri.parse('${HOST}/get_messages/$userId/$threadId');
+      print("URL: $url");
+
+      try {
+        final response =
+            await http.get(url, headers: {'Content-Type': 'application/json'});
+
+        if (response.statusCode == 200) {
+          var data = json.decode(response.body);
+
+          if (data is Map<String, dynamic> && data['messages'] is List) {
+            return List.from(data['messages']);
+          } else {
+            throw Exception('Response data is not in expected format');
+          }
+        } else {
+          throw Exception('Failed to load messages from the server');
+        }
+      } catch (e) {
+        throw Exception('Failed to make the API request for gteMsg: $e');
+      }
+    } else {
+      return [];
+    }
   }
 }
