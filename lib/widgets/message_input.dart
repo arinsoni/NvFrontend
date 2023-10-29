@@ -23,7 +23,7 @@ class MessageInput extends StatefulWidget {
 }
 
 class _MessageInputState extends State<MessageInput> {
-    late TokenLimitController _controller;
+  late TokenLimitController _controller;
 
   @override
   void initState() {
@@ -34,32 +34,51 @@ class _MessageInputState extends State<MessageInput> {
   @override
   Widget build(BuildContext context) {
     return Container(
+      decoration: BoxDecoration(
+    border: Border.all(
+      color: Color(0xffF2F2F2), 
+      width: 2.0,
+    ),
+  ),
       child: Stack(
         children: [
           Container(
+             decoration: BoxDecoration(color: Color(0xffF2F2F2)), 
             padding: const EdgeInsets.only(left: 8.0, right: 8, top: 8),
             child: Column(
               children: [
                 Row(
                   children: <Widget>[
-                    CircularIconButton(
-                      icon: Icons.mic,
-                      backgroundColor: const Color(0xFFAB0505),
-                      // onPressed: widget.onAddIconPressed,
-                      height: 37,
+                    Container(
                       width: 37,
-                      iconSize: 20,
-                      iconColor: Colors.white, 
-                      isEnabled: !widget.isLoading,
+                      height: 37,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                        border: Border.all(
+                            color: Colors
+                                .red // Replace 'borderColor' with your desired color// Replace 'borderWidth' with your desired width. e.g. 2.0
+                            ),
+                      ),
+                      child: Center(
+                        child: IconButton(
+                            icon: Icon(
+                              Icons.add,
+                              color: Colors.red,
+                              size: 20,
+                            ),
+                            padding: EdgeInsets.zero,
+                            onPressed: widget.isLoading ? null : widget.onAddIconPressed),
+                      ),
                     ),
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.only(left: 15.0, right: 15),
                         child: Container(
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(25.0),
+                            borderRadius: BorderRadius.circular(12.0),
                             color: const Color(0xFFFFFFFF),
-                            border: Border.all(color: const Color(0xffF0F0F0)),
+                            border: Border.all(color: const Color(0xffA4A4A4)),
                           ),
                           constraints: const BoxConstraints(
                             maxHeight: 100.0,
@@ -70,12 +89,14 @@ class _MessageInputState extends State<MessageInput> {
                                 shrinkWrap: true,
                                 children: [
                                   TextField(
+                                    maxLength: 500,
                                     controller: widget.messageController,
                                     decoration: const InputDecoration(
-                                      hintText: 'Message',
+                                      counterText: "",
+                                      hintText: 'Send a message...',
                                       hintStyle: TextStyle(
-                                        color:
-                                            Color(0xFFCCD5FF), // Set color here
+                                        color: Color.fromARGB(255, 124, 124,
+                                            124), // Set color here
                                       ),
                                       contentPadding: EdgeInsets.only(
                                           left: 16.0, right: 48.0),
@@ -95,18 +116,18 @@ class _MessageInputState extends State<MessageInput> {
                         ),
                       ),
                     ),
-                    GestureDetector(
-                      onTap: widget.isLoading
+                    IconButton(
+                      icon: Image.asset(
+                        'assets/images/send.png',
+                        width: 25.0,
+                        height: 25.0,
+                      ),
+                      onPressed: widget.isLoading
                           ? null
                           : () {
                               widget.sendMessage(widget.messageController.text);
                             },
-                      child: Image.asset(
-                        'assets/images/send.png',
-                        width: 37.0,
-                        height: 37.0,
-                      ),
-                    ),
+                    )
                   ],
                 ),
                 Padding(
@@ -124,9 +145,6 @@ class _MessageInputState extends State<MessageInput> {
     );
   }
 }
-
-
-
 
 class TokenLimitController extends TextEditingController {
   final int maxTokens;

@@ -72,431 +72,255 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
+    double screenHeight = MediaQuery.of(context).size.height;
 
-    return Scaffold(
-      // key: _scaffoldKey,
-      endDrawer: _buildHistoryDrawer(),
+    final GlobalKey imageKey = GlobalKey();
 
-      appBar: AppBar(
-        shadowColor: Colors.transparent,
-        backgroundColor: Colors.white,
-        leading: IconButton(
-          icon: Image.asset(
-            'assets/images/back.png',
-            height: 20,
-            width: 20,
+    return SafeArea(
+      child: Scaffold(
+        // key: _scaffoldKey,
+        endDrawer: _buildHistoryDrawer(),
+        
+        
+    
+        appBar: AppBar(
+          
+          backgroundColor: Colors.white,
+          leading: IconButton(
+            icon: Image.asset(
+              'assets/images/back.png',
+              height: 20,
+              width: 20,
+            ),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
           ),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-        ),
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              'assets/images/nvsir.png',
-              width: 30.0,
-              height: 30.0,
-            ),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Hello',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontFamily: 'SourceCodePro',
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xFF6F6F6F),
-                  ),
-                ),
-                const Text(
-                  'Student',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontFamily: 'SourceCodePro',
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF595959),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          Builder(
-            builder: (context) => Padding(
-              padding: const EdgeInsets.only(right: 5.0),
-              child: Container(
-                margin: EdgeInsets.only(top: 10, bottom: 10),
-                padding: EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                    borderRadius: BorderRadius.all(Radius.circular(8)),
-                    border: Border.all(
-                        width: 1.2,
-                        color: Color(0xFFE1D6FF).withOpacity(0.45))),
-                child: GestureDetector(
-                  onTap: () {
-                    !isLoading ? Scaffold.of(context).openEndDrawer() : "";
-                  },
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: SvgPicture.asset(
-                          'assets/svg/history.svg',
-                          width: 12.0,
-                          height: 14.0,
-                          colorFilter: !isLoading
-                              ? const ColorFilter.mode(
-                                  Color(0xFF4E4E4E),
-                                  BlendMode.srcIn,
-                                )
-                              : const ColorFilter.mode(
-                                  Color.fromARGB(255, 193, 191, 191),
-                                  BlendMode.srcIn,
-                                ),
-                          semanticsLabel: 'A red up arrow',
-                        ),
-                        onPressed: () {
-                          !isLoading
-                              ? Scaffold.of(context).openEndDrawer()
-                              : "";
-                        },
-                        splashColor: Colors.transparent,
-                        hoverColor: Colors.transparent,
-                      ),
-                      Text(
-                        "History",
-                        style: TextStyle(
-                          color: isLoading
-                              ? Color.fromARGB(255, 193, 191, 191)
-                              : Color(0xFF2D2D2D),
-                          fontFamily: 'SourceCodePro',
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                        ),
-                      ),
-                      SizedBox(
-                        width: 10,
-                      ),
-                    ],
-                  ),
-                ),
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset(
+                'assets/images/nvsir.png',
+                width: 30.0,
+                height: 30.0,
               ),
-            ),
-          )
-        ],
-      ),
-      body: isFetching
-          ? Center(child: CircularProgressIndicator(color: Colors.blue))
-          : Stack(
-              children: [
-                Container(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.white,
-                          Color(0xFFEBEEFD),
-                        ],
-                      ),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'NV.AI',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontFamily: 'SourceSansPro',
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xFF6F6F6F),
+                    ),
+                  ),
+                  const Text(
+                    'Student',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontFamily: 'SourceSansPro',
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF595959),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            Builder(
+              builder: (context) => Padding(
+                padding: const EdgeInsets.only(right: 5.0),
+                child: Container(
+                  margin: EdgeInsets.only(top: 10, bottom: 10),
+                  padding: EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                      borderRadius: BorderRadius.all(Radius.circular(8)),
+                      border: Border.all(
+                          width: 1.2,
+                          color: Color(0xFFE1D6FF).withOpacity(0.45))),
+                  child: GestureDetector(
+                    onTap: () {
+                      !isLoading ? Scaffold.of(context).openEndDrawer() : "";
+                    },
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: SvgPicture.asset(
+                            'assets/svg/history.svg',
+                            width: 12.0,
+                            height: 14.0,
+                            colorFilter: !isLoading
+                                ? const ColorFilter.mode(
+                                    Color(0xFF4E4E4E),
+                                    BlendMode.srcIn,
+                                  )
+                                : const ColorFilter.mode(
+                                    Color.fromARGB(255, 193, 191, 191),
+                                    BlendMode.srcIn,
+                                  ),
+                            semanticsLabel: 'A red up arrow',
+                          ),
+                          onPressed: () {
+                            !isLoading
+                                ? Scaffold.of(context).openEndDrawer()
+                                : "";
+                          },
+                          splashColor: Colors.transparent,
+                          hoverColor: Colors.transparent,
+                        ),
+                        Text(
+                          "History",
+                          style: TextStyle(
+                            color: isLoading
+                                ? Color.fromARGB(255, 193, 191, 191)
+                                : Color(0xFF2D2D2D),
+                            fontFamily: 'SourceSansPro',
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                        SizedBox(
+                          width: 10,
+                        ),
+                      ],
                     ),
                   ),
                 ),
-                Container(
-                  child: Column(
-                    children: <Widget>[
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: ListView.builder(
-                            itemCount: messages.length + (isLoading ? 1 : 0),
-                            controller: _scrollController,
-                            reverse: true,
-                            itemBuilder: (context, index) {
-                              if (isLoading && index == 0) {
-                                return TypingIndicator();
-                              }
-
-                              int messageIndex = isLoading ? index - 1 : index;
-                              print("\n");
-                              return MessageContainer(
-                                message: messages[messageIndex],
-                                onEdit: (String text) {
-                                  setState(() {
-                                    _messageController.text = text;
-                                    originalMessage = text;
-                                  });
-                                },
-                                isLoading: isLoading && index == 0,
-                                onRefresh: _refreshMessage,
-                                index: messageIndex,
-                                isRefresh: messageIndex == 0 ? true : false,
-                                isEditable: messageIndex == 1 ? true : false,
-                                isLastMessage:
-                                    messageIndex == messages.length - 1
-                                        ? true
-                                        : false,
-                              );
-                            },
+              ),
+            )
+          ],
+        ),
+        body: isFetching
+            ? Center(child: CircularProgressIndicator(color: Colors.red))
+            : Stack(
+                children: [
+                  Container(
+                    child: Container(
+                      decoration: BoxDecoration(color: Color(0xffFCFCFC)
+                          // gradient: LinearGradient(
+                          //   begin: Alignment.topCenter,
+                          //   end: Alignment.bottomCenter,
+                          //   colors: [
+                          //     Colors.white,
+                          //     Color(0xFFEBEEFD),
+                          //   ],
+                          // ),
                           ),
-                        ),
-                      ),
-                      MessageInput(
-                        messageController: _messageController,
-                        sendMessage: mySendMessageFunction,
-                        onAddIconPressed: () {
-                          print("Add button pressed");
-                          setState(() {
-                            _generateNewThreadId();
-                            print("New thread ID generated: $currentThreadId");
-                            print(threads);
-                            // threads.add(currentThreadId);
-                            print("Current threads: $threads");
-                            messages.clear();
-                          });
-                          print("State set");
-                        },
-                        isLoading: isLoading,
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-                !isFirstMessageSent
-                    ? SingleChildScrollView(
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 20.0),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Center(
-                                child: IntrinsicWidth(
-                                  child: Container(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(4.0),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Container(
-                                            decoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular(5),
-                                              border: Border.all(
-                                                width: 3,
-                                                color: qColor,
-                                              ),
-                                            ),
-                                            child: Container(
-                                              margin: EdgeInsets.all(3),
-                                              decoration: BoxDecoration(
-                                                border: Border.all(
-                                                    width: 1.2,
-                                                    color: Color(0xFFE1D6FF)
-                                                        .withOpacity(0.45)),
-                                                gradient: LinearGradient(
-                                                  colors: [
-                                                    Color(0xFFFFF9EE),
-                                                    Color(0xFFFFEFD0)
-                                                  ],
-                                                  stops: [0.0, 1.0],
-                                                  end: Alignment.centerLeft,
-                                                  begin: Alignment.centerRight,
-                                                ),
-                                                borderRadius:
-                                                    BorderRadius.circular(5),
-                                              ),
-                                              child: Row(
-                                                children: [
-                                                  ElevatedButton(
-                                                    style: ButtonStyle(
-                                                      backgroundColor:
-                                                          MaterialStateProperty
-                                                              .all(Colors
-                                                                  .transparent),
-                                                      elevation:
-                                                          MaterialStateProperty
-                                                              .all(0),
-                                                      overlayColor:
-                                                          MaterialStateProperty
-                                                              .resolveWith<
-                                                                  Color?>((Set<
-                                                                      MaterialState>
-                                                                  states) {
-                                                        if (states.contains(
-                                                            MaterialState
-                                                                .pressed))
-                                                          return Colors
-                                                              .transparent;
-                                                        return null;
-                                                      }),
-                                                      minimumSize:
-                                                          MaterialStateProperty
-                                                              .all(
-                                                                  Size(10, 40)),
-                                                      maximumSize:
-                                                          MaterialStateProperty
-                                                              .all(Size(
-                                                                  200, 40)),
-                                                    ),
-                                                    onPressed: () {
-                                                      setState(() {
-                                                        qColor = Color.fromARGB(
-                                                                255,
-                                                                248,
-                                                                208,
-                                                                134)
-                                                            .withOpacity(1);
-                                                        mColor =
-                                                            Colors.transparent;
-                                                      });
-                                                    },
-                                                    child: Text(
-                                                      'Questions',
-                                                      style: TextStyle(
-                                                          color:
-                                                              Color(0xFF4E4E4E),
-                                                          fontSize: (0.025 *
-                                                                  screenWidth)
-                                                              .clamp(12, 24)
-                                                              .toDouble(),
-                                                          fontFamily:
-                                                              'Montserrat',
-                                                          fontWeight:
-                                                              FontWeight.w600),
-                                                    ),
-                                                  ),
-                                                  Image.asset(
-                                                    'assets/images/atom.png',
-                                                    width: 18,
-                                                    height: 18,
-                                                    color: Color.fromARGB(
-                                                        255, 247, 211, 143),
-                                                  ),
-                                                  SizedBox(
-                                                    width: 10,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                          Flexible(
-                                              child: SizedBox(
-                                            width: 20,
-                                          )),
-                                          Container(
-                                            decoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular(5),
-                                              border: Border.all(
-                                                  width: 3, color: mColor),
-                                            ),
-                                            child: Container(
-                                              margin: EdgeInsets.all(4),
-                                              decoration: BoxDecoration(
-                                                gradient: LinearGradient(
-                                                  colors: [
-                                                    Color(
-                                                        0xFFFFBCD4), // #FFBCD4
-                                                    Color(
-                                                        0xFFFFF3F8), // #FFF3F8
-                                                  ],
-                                                  stops: [
-                                                    0,
-                                                    1,
-                                                  ],
-                                                  begin: Alignment.centerLeft,
-                                                  end: Alignment.centerRight,
-                                                ),
-                                                borderRadius:
-                                                    BorderRadius.circular(5),
-                                              ),
-                                              child: Row(
-                                                children: [
-                                                  ElevatedButton(
-                                                    style: ButtonStyle(
-                                                      backgroundColor:
-                                                          MaterialStateProperty
-                                                              .all(Colors
-                                                                  .transparent),
-                                                      elevation:
-                                                          MaterialStateProperty
-                                                              .all(0),
-                                                      overlayColor:
-                                                          MaterialStateProperty
-                                                              .resolveWith<
-                                                                  Color?>((Set<
-                                                                      MaterialState>
-                                                                  states) {
-                                                        if (states.contains(
-                                                            MaterialState
-                                                                .pressed))
-                                                          return Colors
-                                                              .transparent;
-                                                        return null;
-                                                      }),
-                                                      minimumSize:
-                                                          MaterialStateProperty
-                                                              .all(
-                                                                  Size(10, 40)),
-                                                      maximumSize:
-                                                          MaterialStateProperty
-                                                              .all(Size(
-                                                                  200, 40)),
-                                                    ),
-                                                    onPressed: () {
-                                                      setState(() {
-                                                        mColor =
-                                                            Color(0xFFFFBCD4)
-                                                                .withOpacity(1);
-                                                        qColor =
-                                                            Colors.transparent;
-                                                      });
-                                                    },
-                                                    child: Text(
-                                                      'Motivation',
-                                                      style: TextStyle(
-                                                          color:
-                                                              Color(0xFF4E4E4E),
-                                                          fontSize: (0.025 *
-                                                                  screenWidth)
-                                                              .clamp(12, 24)
-                                                              .toDouble(),
-                                                          fontFamily:
-                                                              'Montserrat',
-                                                          fontWeight:
-                                                              FontWeight.w600),
-                                                    ),
-                                                  ),
-                                                  Image.asset(
-                                                    'assets/images/motivation.png',
-                                                    width: 20,
-                                                    height: 20,
-                                                    color: Color(0xFFFEB1CD),
-                                                  ),
-                                                  SizedBox(
-                                                    width: 10,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
+                   if (!isFirstMessageSent)
+                    Align(
+                      alignment: Alignment.topCenter,
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 50.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Center(
+                                  child: Image.asset(
+                                    'assets/images/logo.png',
+                                    width: 0.7 * screenWidth,
+                                    height: 0.4 * screenHeight,
+                                    key: imageKey,
                                   ),
                                 ),
-                              ),
-                            ],
+                                Center(
+                                  child: Image.asset(
+                                    'assets/images/logo.png',
+                                    width: 0.7 * screenWidth,
+                                    height: 0.4 * screenHeight,
+                                  ),
+                                ),
+                                Center(
+                                  child: Image.asset(
+                                    'assets/images/name.png',
+                                    width: 0.4 * screenWidth,
+                                    height: 0.06 * screenHeight,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(
+                              height: 20,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  Container(
+                   
+                    child: Column(
+                      children: <Widget>[
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ListView.builder(
+                              itemCount: messages.length + (isLoading ? 1 : 0),
+                              controller: _scrollController,
+                              reverse: true,
+                              itemBuilder: (context, index) {
+                                if (isLoading && index == 0) {
+                                  return TypingIndicator();
+                                }
+    
+                                int messageIndex = isLoading ? index - 1 : index;
+                                print("\n");
+                                return MessageContainer(
+                                  message: messages[messageIndex],
+                                  onEdit: (String text) {
+                                    setState(() {
+                                      _messageController.text = text;
+                                      originalMessage = text;
+                                    });
+                                  },
+                                  isLoading: isLoading && index == 0,
+                                  onRefresh: _refreshMessage,
+                                  index: messageIndex,
+                                  isRefresh: messageIndex == 0 ? true : false,
+                                  isEditable: messageIndex == 1 ? true : false,
+                                  isLastMessage:
+                                      messageIndex == messages.length - 1
+                                          ? true
+                                          : false,
+                                );
+                              },
+                            ),
                           ),
                         ),
-                      )
-                    : SizedBox(),
-              ],
-            ),
+                        MessageInput(
+                          messageController: _messageController,
+                          sendMessage: mySendMessageFunction,
+                          onAddIconPressed: () {
+                            print("Add button pressed");
+                            setState(() {
+                              _generateNewThreadId();
+                              _messageController.clear();
+                              print("New thread ID generated: $currentThreadId");
+                              print(threads);
+                              // threads.add(currentThreadId);
+                              print("Current threads: $threads");
+                              messages.clear();
+                              isFirstMessageSent = false;
+                            });
+                            print("State set");
+                          },
+                          isLoading: isLoading,
+                        ),
+                      ],
+                    ),
+                  ),
+                 
+                
+                ],
+              ),
+      ),
     );
   }
 
@@ -505,6 +329,9 @@ class _HomeScreenState extends State<HomeScreen> {
       return Center(child: CircularProgressIndicator());
     }
     Map<String, List<Thread>> threadsByDate = organizeThreadsByDate(threads);
+    List<String> sortedDates = threadsByDate.keys.toList()
+  ..sort((a, b) => DateTime.parse(b).compareTo(DateTime.parse(a)));
+
 
     print("length: ${threadsByDate.keys.length}");
 
@@ -513,79 +340,78 @@ class _HomeScreenState extends State<HomeScreen> {
         absorbing: false,
         child: Container(
           decoration: const BoxDecoration(
-              border: Border(
-                left: BorderSide(
-                  color: Color(0xFF7356E8),
-                  width: 3.0,
-                ),
+            border: Border(
+              left: BorderSide(
+                color: Color(0xffB50503),
+                width: 3.0,
               ),
             ),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Container(
-                  child: Stack(
-                    alignment: Alignment.centerLeft,
-                    children: [
-                      Positioned(
-                        left: 0,
-                        top: 0,
-                        bottom: 0,
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF7356E8),
-                            borderRadius: BorderRadius.only(
-                              bottomRight: Radius.circular(50),
-                            ),
+                child: Stack(
+                  alignment: Alignment.centerLeft,
+                  children: [
+                    Positioned(
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          color: Color(0xffB50503),
+                          borderRadius: BorderRadius.only(
+                            bottomRight: Radius.circular(50),
                           ),
-                          width: 50,
-                          height: 50,
-                          child: Padding(
-                            padding:
-                                const EdgeInsets.only(right: 10.0, bottom: 10),
-                            child: IconButton(
-                              icon: Icon(Icons.close, color: Colors.white),
-                              onPressed: () => Navigator.of(context).pop(),
-                              splashRadius: 1,
-                              hoverColor: Colors.transparent,
-                              splashColor: Colors.transparent,
-                            ),
+                        ),
+                        width: 50,
+                        height: 50,
+                        child: Padding(
+                          padding:
+                              const EdgeInsets.only(right: 10.0, bottom: 10),
+                          child: IconButton(
+                            icon: Icon(Icons.close, color: Colors.white),
+                            onPressed: () => Navigator.of(context).pop(),
+                            splashRadius: 1,
+                            hoverColor: Colors.transparent,
+                            splashColor: Colors.transparent,
                           ),
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 15.0),
-                        child: Center(
-                          child: Column(
-                            children: [
-                              Text(
-                                'Chat History',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 20,
-                                  fontFamily: 'Goldman',
-                                ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 15.0),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Text(
+                              'Chat History',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 20,
+                                fontFamily: 'SourceSansPro',
                               ),
-                              Container(
-                                margin: EdgeInsets.fromLTRB(50, 0, 30, 0),
-                                child: Divider(
-                                  thickness: 1,
-                                  color: Color(0xFF878787),
-                                ),
+                            ),
+                            Container(
+                              margin: EdgeInsets.fromLTRB(50, 0, 30, 0),
+                              child: Divider(
+                                thickness: 1,
+                                color: Color(0xFF878787),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
+              ),
               Expanded(
                 child: ListView.builder(
-                  itemCount: threadsByDate.keys.length,
+                  itemCount: sortedDates.length,
                   itemBuilder: (context, index) {
-                    String date =
-                        threadsByDate.keys.toList().elementAt(index);
+                    String date = sortedDates.toList().elementAt(index);
                     DateTime currentDate = DateTime.now();
                     DateTime threadTimestamp = DateTime.parse(date);
                     int daysDifference =
@@ -606,18 +432,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     List<Thread> threadsForDate = threadsByDate[date]!;
 
-                    // print("timestamp debuggggg: $date and $threadsForDate");
+            
 
                     return Column(
                       children: [
                         Padding(
                           padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            sectionText,
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                fontFamily: "SourceCodePro"),
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 40.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                Text(
+                                  sectionText,
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                      fontFamily: "SourceCodePro",
+                                      color: Color(0xff707070)),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                         ...threadsForDate.reversed.map((thread) {
@@ -641,6 +476,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 currentThreadId = threadId;
                                 currentThreadName = threadName;
                                 messages.clear();
+                                isFirstMessageSent = true;
                                 Navigator.of(context).pop();
                               });
 
@@ -687,33 +523,60 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
               ),
-              ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    Navigator.of(context).pop();
-                    _generateNewThreadId();
-                    print("New thread ID generated: $currentThreadId");
-                    print(threads);
-                    print("Current threads: $threads");
-                    messages.clear();
-                  });
-                },
-                style: ElevatedButton.styleFrom(
-                  primary: Color(0xFFEBEEFD),
-                  elevation: 0,
-                  padding: EdgeInsets.all(2),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(0),
-                  ),
+              Container(
+                margin: EdgeInsets.fromLTRB(50, 0, 30, 0),
+                child: Divider(
+                  thickness: 1,
+                  color: Color(0xFF878787),
                 ),
-                child: Text(
-                  ' + ',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 30,
-                  ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 48.0, bottom: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Image.asset(
+                      'assets/images/name.png',
+                      width: 40,
+                      height: 40,
+                      color: Color(0xffB50503),
+                    ),
+                    Image.asset(
+                      'assets/images/tagline.png',
+                      width: 90,
+                   
+                    ),
+
+                  ],
                 ),
-              )
+              ),
+              // ElevatedButton(
+              //   onPressed: () {
+              //     setState(() {
+              //       Navigator.of(context).pop();
+              //       _generateNewThreadId();
+              //       print("New thread ID generated: $currentThreadId");
+              //       print(threads);
+              //       print("Current threads: $threads");
+              //       messages.clear();
+              //     });
+              //   },
+              //   style: ElevatedButton.styleFrom(
+              //     primary: Color(0xFFEBEEFD),
+              //     elevation: 0,
+              //     padding: EdgeInsets.all(2),
+              //     shape: RoundedRectangleBorder(
+              //       borderRadius: BorderRadius.circular(0),
+              //     ),
+              //   ),
+              //   child: Text(
+              //     ' + ',
+              //     style: TextStyle(
+              //       color: Colors.black,
+              //       fontSize: 30,
+              //     ),
+              //   ),
+              // )
             ],
           ),
         ),
@@ -878,7 +741,6 @@ class _HomeScreenState extends State<HomeScreen> {
       String userId, DateTime timestamp, bool isFirstMessageSent) async {
     print("userid in process enq: $userId");
     try {
-
       final response = await http.post(
         Uri.parse('${HOST}/$userId/process_query'),
         headers: {

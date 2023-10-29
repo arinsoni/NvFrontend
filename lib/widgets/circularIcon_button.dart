@@ -6,7 +6,10 @@ class CircularIconButton extends StatelessWidget {
   final double iconSize;
   final double width;
   final double height;
+  final double? borderWidth;
   final Color iconColor;
+
+  final Color? borderColor;
   final Function()? onPressed;
   final bool isEnabled;
 
@@ -19,28 +22,30 @@ class CircularIconButton extends StatelessWidget {
     required this.isEnabled,
     this.onPressed,
     required this.iconColor,
-    required this.icon,
+    required this.icon, this.borderWidth, this.borderColor,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: backgroundColor,
-        ),
-        child: Center(
-            child: IconButton(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: backgroundColor,
+        
+      ),
+      child: Center(
+        child: IconButton(
           icon: Icon(
             icon,
             color: iconColor,
             size: iconSize,
           ),
-         
           padding: EdgeInsets.zero,
           onPressed: isEnabled ? onPressed : null,
-        )));
+        ),
+      ),
+    );
   }
 }

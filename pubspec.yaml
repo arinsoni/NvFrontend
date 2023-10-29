@@ -101,6 +101,9 @@ flutter:
     - assets/images/atom.png
     - assets/images/motivation.png
     - assets/images/send.png
+    - assets/images/logo.png
+    - assets/images/name.png
+    - assets/images/refresh.png
     - .env
 
 
@@ -120,6 +123,10 @@ flutter:
         - asset: assets/fonts/SourceCodePro-SemiBold.ttf
           weight: 600
         - asset: assets/fonts/SourceCodePro-Regular.ttf
+          weight: 400
+    - family: SourceSansPro
+      fonts:
+        - asset: assets/fonts/source-sans-pro/SourceSansPro-Regular.otf
           weight: 400
 
 

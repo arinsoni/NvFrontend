@@ -69,8 +69,9 @@ class _MessageListItemState extends State<MessageListItem> {
       child: ListTile(
         leading: IconButton(
           icon: Icon(
-            isFav ? Icons.favorite : Icons.favorite_border,
-            color: isFav ? Colors.red : Colors.grey,
+            isFav ? Icons.star : Icons.star_border,
+            color: Colors.red,
+            size: 20,
           ),
           onPressed: () async {
             await _updateFavorite(!isFav);
@@ -79,7 +80,7 @@ class _MessageListItemState extends State<MessageListItem> {
         title: Text(widget.message),
         trailing: IconButton(
             icon: Icon(
-              Icons.delete,
+              Icons.delete_outline,
               color: Colors.grey,
             ),
             onPressed: widget.onDelete),

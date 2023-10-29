@@ -12,7 +12,7 @@ class TypingIndicator extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           SpinKitWave(
-            color: Color(0xFF7356E8),
+            color: Color((0xFFB50503)),
             size: 20.0,
           ),
           SizedBox(width: 10),

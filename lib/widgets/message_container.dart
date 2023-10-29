@@ -51,7 +51,7 @@ class MessageContainer extends StatelessWidget {
                     height: 30,
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white,
+                      color: Color(0xffE3EAEB),
                     ),
                     child: Center(
                       child: GestureDetector(
@@ -62,8 +62,8 @@ class MessageContainer extends StatelessWidget {
                         },
                         child: Image.asset(
                           'assets/images/edit.png',
-                          width: 20.0,
-                          height: 20.0,
+                          width: 15.0,
+                          height: 15.0,
                         ),
                       ),
                     ),
@@ -79,8 +79,8 @@ class MessageContainer extends StatelessWidget {
               ),
               decoration: BoxDecoration(
                 color: isUserMessage
-                    ? const Color(0xFF6983FF)
-                    : const Color(0xFFFFFFFF),
+                    ?  Color(0xffEDEDED)
+                    : const Color(0xFFFFECEC),
                 boxShadow: [
                   BoxShadow(
                     color: const Color.fromRGBO(0, 0, 0, 0.25),
@@ -110,8 +110,10 @@ class MessageContainer extends StatelessWidget {
                     child: Text(
                       message.text,
                       style: TextStyle(
-                        color: isUserMessage ? Colors.white : Colors.black,
+                        color: isUserMessage ? Colors.black : Colors.black,
                         fontSize: 16,
+                        fontFamily: "SourceSansPro",
+                        fontWeight: FontWeight.w400
                       ),
                     ),
                   ),
@@ -122,17 +124,25 @@ class MessageContainer extends StatelessWidget {
           Padding(
             padding: EdgeInsets.only(left: 8, bottom: 8.0),
             child: !isUserMessage && isRefresh
-                ? CircularIconButton(
-                    icon: Icons.refresh,
-                    backgroundColor: const Color(0xFF4968FF),
-                    onPressed: () {
-                      onRefresh(index);
-                    },
-                    height: 30,
+                ? Container(
                     width: 30,
-                    iconSize: 20,
-                    iconColor: Colors.white,
-                    isEnabled: true,
+                    height: 30,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0xffE3EAEB),
+                    ),
+                    child: Center(
+                      child: GestureDetector(
+                        onTap: () {
+                          onRefresh(index);
+                        },
+                        child: Image.asset(
+                          'assets/images/refresh.png',
+                          width: 15.0,
+                          height: 15.0,
+                        ),
+                      ),
+                    ),
                   )
                 : const SizedBox(),
           ),
@@ -148,7 +158,7 @@ class MessageContainer extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           SpinKitWave(
-            color: Color(0xFF7356E8),
+            color: Color(0xFFB50503),
             size: 20.0,
           ),
           SizedBox(width: 10),
@@ -157,7 +167,7 @@ class MessageContainer extends StatelessWidget {
             style: TextStyle(
                 fontStyle: FontStyle.italic,
                 fontSize: 20,
-                color: Color(0xFF9999999E)),
+                color: Color(0xFF9C9C9C)),
           ),
         ],
       ),
