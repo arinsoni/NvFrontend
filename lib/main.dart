@@ -272,6 +272,7 @@ class _HomeScreenState extends State<HomeScreen> {
     
                                 int messageIndex = isLoading ? index - 1 : index;
                                 print("\n");
+                                print("deletinf the index ${messageIndex}");
                                 return MessageContainer(
                                   message: messages[messageIndex],
                                   onEdit: (String text) {
@@ -329,9 +330,6 @@ class _HomeScreenState extends State<HomeScreen> {
       return Center(child: CircularProgressIndicator());
     }
     Map<String, List<Thread>> threadsByDate = organizeThreadsByDate(threads);
-    List<String> sortedDates = threadsByDate.keys.toList()
-  ..sort((a, b) => DateTime.parse(b).compareTo(DateTime.parse(a)));
-
 
     print("length: ${threadsByDate.keys.length}");
 
@@ -409,9 +407,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               Expanded(
                 child: ListView.builder(
-                  itemCount: sortedDates.length,
+                  itemCount: threadsByDate.keys.length,
                   itemBuilder: (context, index) {
-                    String date = sortedDates.toList().elementAt(index);
+                    String date = threadsByDate.keys.toList().elementAt(index);
                     DateTime currentDate = DateTime.now();
                     DateTime threadTimestamp = DateTime.parse(date);
                     int daysDifference =
@@ -886,7 +884,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     Message messageToRefresh = messages[index + 1];
+    print("deleting");
     deleteMessage(userId, currentThreadId, index);
+    print("deleted");
     DateTime now = DateTime.now();
 
     setState(() {
