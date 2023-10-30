@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
 import 'circularIcon_button.dart';
+import 'package:flutter_sound/flutter_sound.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 typedef SendMessageFunction = void Function(String message);
 
@@ -23,27 +25,19 @@ class MessageInput extends StatefulWidget {
 }
 
 class _MessageInputState extends State<MessageInput> {
-  late TokenLimitController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TokenLimitController(maxTokens: 8000, context: context);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-    border: Border.all(
-      color: Color(0xffF2F2F2), 
-      width: 2.0,
-    ),
-  ),
+        border: Border.all(
+          color: Color(0xffF2F2F2),
+          width: 2.0,
+        ),
+      ),
       child: Stack(
         children: [
           Container(
-             decoration: BoxDecoration(color: Color(0xffF2F2F2)), 
+            decoration: BoxDecoration(color: Color(0xffF2F2F2)),
             padding: const EdgeInsets.only(left: 8.0, right: 8, top: 8),
             child: Column(
               children: [
@@ -68,7 +62,9 @@ class _MessageInputState extends State<MessageInput> {
                               size: 20,
                             ),
                             padding: EdgeInsets.zero,
-                            onPressed: widget.isLoading ? null : widget.onAddIconPressed),
+                            onPressed: widget.isLoading
+                                ? null
+                                : widget.onAddIconPressed),
                       ),
                     ),
                     Expanded(
@@ -83,20 +79,20 @@ class _MessageInputState extends State<MessageInput> {
                           constraints: const BoxConstraints(
                             maxHeight: 100.0,
                           ),
-                          child: Stack(
+                          child: Row(
                             children: <Widget>[
-                              ListView(
-                                shrinkWrap: true,
-                                children: [
-                                  TextField(
+                              Expanded(
+                                // Added this to ensure the text field only takes up available space
+                                child: SingleChildScrollView(
+                                  child: TextField(
                                     maxLength: 500,
                                     controller: widget.messageController,
                                     decoration: const InputDecoration(
                                       counterText: "",
                                       hintText: 'Send a message...',
                                       hintStyle: TextStyle(
-                                        color: Color.fromARGB(255, 124, 124,
-                                            124), // Set color here
+                                        color:
+                                            Color.fromARGB(255, 124, 124, 124),
                                       ),
                                       contentPadding: EdgeInsets.only(
                                           left: 16.0, right: 48.0),
@@ -109,7 +105,15 @@ class _MessageInputState extends State<MessageInput> {
                                     },
                                     enabled: !widget.isLoading,
                                   ),
-                                ],
+                                ),
+                              ),
+                              IconButton(
+                                icon: Icon(
+                                  Icons.mic,
+                                  color:
+                                      _isListening ? Colors.blue : Colors.red,
+                                ),
+                                onPressed: _toggleListening,
                               ),
                             ],
                           ),
@@ -144,36 +148,38 @@ class _MessageInputState extends State<MessageInput> {
       ),
     );
   }
-}
 
-class TokenLimitController extends TextEditingController {
-  final int maxTokens;
-  final BuildContext context;
+  final stt.SpeechToText _speech = stt.SpeechToText();
+  bool _isListening = false;
 
-  TokenLimitController({required this.maxTokens, required this.context});
-
-  @override
-  set text(String newText) {
-    if (newText.split(' ').length <= maxTokens) {
-      super.text = newText;
+  Future<void> _toggleListening() async {
+    if (_isListening) {
+      print("its listening");
+      _speech.stop();
+      setState(() => _isListening = false);
     } else {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text('Token Limit Reached'),
-            content: Text('You cannot enter more than $maxTokens tokens.'),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: Text('OK'),
-              ),
-            ],
-          );
+      print("sun raha hai na tu");
+      bool available = await _speech.initialize(
+        onStatus: (status) {
+          print("status: ${status}");
+          if (status == "notListening") {
+            setState(() => _isListening = false);
+            print("stt: ${_speech.lastRecognizedWords}");
+            widget.messageController.text = _speech.lastRecognizedWords;
+          }
         },
       );
+
+      print("available: $available");
+      if (available) {
+        setState(() => _isListening = true);
+        _speech.listen(
+            onResult: (result) {
+              print("result : ${result.recognizedWords}");
+              widget.messageController.text = result.recognizedWords;
+            },
+            localeId: 'en_IN');
+      }
     }
   }
 }

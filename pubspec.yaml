@@ -48,11 +48,13 @@ dependencies:
   wave: ^0.2.2
   intl: ^0.18.1
   shared_preferences: ^2.2.2
-  logger: ^2.0.2+1
+
   flutter_dotenv: ^5.1.0
   flutter_launcher_icons: 
   loader_overlay: ^2.3.2
   animated_text_kit:
+  speech_to_text: ^6.3.0
+  flutter_sound: ^9.2.13
 
 
 flutter_icons:
