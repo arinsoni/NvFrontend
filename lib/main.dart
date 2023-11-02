@@ -54,7 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // initiallization
   String originalMessage = "";
   String audioUrl = "";
-  String userId = "";
+  String userId = '';
   String currentThreadId = '';
   String currentThreadName = '';
   bool isLoading = false;
