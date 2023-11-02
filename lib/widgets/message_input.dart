@@ -28,53 +28,25 @@ class _MessageInputState extends State<MessageInput> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: Color(0xffF2F2F2),
-          width: 2.0,
-        ),
-      ),
+     
       child: Stack(
         children: [
           Container(
-            decoration: BoxDecoration(color: Color(0xffF2F2F2)),
+
             padding: const EdgeInsets.only(left: 8.0, right: 8, top: 8),
             child: Column(
               children: [
                 Row(
                   children: <Widget>[
-                    Container(
-                      width: 37,
-                      height: 37,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
-                        border: Border.all(
-                            color: Colors
-                                .red // Replace 'borderColor' with your desired color// Replace 'borderWidth' with your desired width. e.g. 2.0
-                            ),
-                      ),
-                      child: Center(
-                        child: IconButton(
-                            icon: Icon(
-                              Icons.add,
-                              color: Colors.red,
-                              size: 20,
-                            ),
-                            padding: EdgeInsets.zero,
-                            onPressed: widget.isLoading
-                                ? null
-                                : widget.onAddIconPressed),
-                      ),
-                    ),
+                    
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.only(left: 15.0, right: 15),
                         child: Container(
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12.0),
+                            borderRadius: BorderRadius.circular(20.0),
                             color: const Color(0xFFFFFFFF),
-                            border: Border.all(color: const Color(0xffA4A4A4)),
+                            
                           ),
                           constraints: const BoxConstraints(
                             maxHeight: 100.0,

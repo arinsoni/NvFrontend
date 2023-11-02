@@ -66,24 +66,56 @@ class _MessageListItemState extends State<MessageListItem> {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: widget.onTap,
-      child: ListTile(
-        leading: IconButton(
-          icon: Icon(
-            isFav ? Icons.star : Icons.star_border,
-            color: Colors.red,
-            size: 20,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 1),
+        margin: EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.only(
+            topRight: const Radius.circular(25),
+            topLeft: const Radius.circular(25),
+            bottomLeft: const Radius.circular(25),
+            bottomRight: const Radius.circular(0),
           ),
-          onPressed: () async {
-            await _updateFavorite(!isFav);
-          },
-        ),
-        title: Text(widget.message),
-        trailing: IconButton(
-            icon: Icon(
-              Icons.delete_outline,
-              color: Colors.grey,
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.5),
+              spreadRadius: 0.5,
+              blurRadius: 2,
+              offset: Offset(0, 3),
             ),
-            onPressed: widget.onDelete),
+          ],
+        ),
+        child: Row(
+          children: [
+            IconButton(
+              icon: Icon(
+                isFav ? Icons.star_rate_rounded : Icons.star_border_rounded,
+                color: isFav ?  Colors.red : Colors.grey,
+                size: 25,
+              ),
+              onPressed: () async {
+                await _updateFavorite(!isFav);
+              },
+            ),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                widget.message,
+                style: TextStyle(color: Colors.black),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            SizedBox(width: 10),
+            IconButton(
+              icon: Icon(
+                Icons.delete_outline,
+                color: Colors.red,
+              ),
+              onPressed: widget.onDelete,
+            ),
+          ],
+        ),
       ),
     );
   }

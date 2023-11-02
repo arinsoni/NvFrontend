@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:nvsirai/constants/constants.dart';
 import 'package:nvsirai/schema/message.dart';
 import 'audio _ player.dart';
 
@@ -43,28 +44,20 @@ class MessageContainer extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(bottom: 8.0),
             child: isUserMessage && isEditable
-                ? Container(
-                    width: 30,
-                    height: 30,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xffE3EAEB),
+                ? Center(
+                  child: GestureDetector(
+                    onTap: () {
+                      if (isUserMessage) {
+                        onEdit(message.text);
+                      }
+                    },
+                    child: Image.asset(
+                      'assets/images/edit_refresh.png',
+                      width: 80.0,
+                      height: 80.0,
                     ),
-                    child: Center(
-                      child: GestureDetector(
-                        onTap: () {
-                          if (isUserMessage) {
-                            onEdit(message.text);
-                          }
-                        },
-                        child: Image.asset(
-                          'assets/images/edit.png',
-                          width: 15.0,
-                          height: 15.0,
-                        ),
-                      ),
-                    ),
-                  )
+                  ),
+                )
                 : SizedBox(),
           ),
           Padding(
@@ -76,8 +69,8 @@ class MessageContainer extends StatelessWidget {
               ),
               decoration: BoxDecoration(
                 color: isUserMessage
-                    ?  Color(0xffEDEDED)
-                    : const Color(0xFFFFECEC),
+                    ?  AppColors.primaryColor
+                    : const Color(0xFFFFFFFF),
                 boxShadow: [
                   BoxShadow(
                     color: const Color.fromRGBO(0, 0, 0, 0.25),
@@ -107,7 +100,7 @@ class MessageContainer extends StatelessWidget {
                     child: Text(
                       message.text,
                       style: TextStyle(
-                        color: isUserMessage ? Colors.black : Colors.black,
+                        color: isUserMessage ? Colors.white : Colors.black,
                         fontSize: 16,
                         fontFamily: "SourceSansPro",
                         fontWeight: FontWeight.w400
@@ -121,26 +114,19 @@ class MessageContainer extends StatelessWidget {
           Padding(
             padding: EdgeInsets.only(left: 8, bottom: 8.0),
             child: !isUserMessage && isRefresh
-                ? Container(
-                    width: 30,
-                    height: 30,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xffE3EAEB),
+                ? Center(
+                  child: GestureDetector(
+                    onTap: () {
+                      onRefresh(index);
+                    },
+                    child: Image.asset(
+                      'assets/images/bot_refresh.png',
+                      width: 30.0,
+                      height: 30.0,
+                   
                     ),
-                    child: Center(
-                      child: GestureDetector(
-                        onTap: () {
-                          onRefresh(index);
-                        },
-                        child: Image.asset(
-                          'assets/images/refresh.png',
-                          width: 15.0,
-                          height: 15.0,
-                        ),
-                      ),
-                    ),
-                  )
+                  ),
+                )
                 : const SizedBox(),
           ),
         ],

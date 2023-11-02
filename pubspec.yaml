@@ -94,24 +94,25 @@ flutter:
     - assets/svg/logo_bg.svg
     - assets/svg/NV.AI.svg
     - assets/svg/edit.svg
+
     - assets/images/nvsir.png
-    - assets/images/back.png
     - assets/images/tagline.png
-    - assets/images/edit.png
-    - assets/images/bg.jpg
+    - assets/images/bg.png
     - assets/images/tagline.png
-    - assets/images/atom.png
-    - assets/images/motivation.png
+    - assets/images/hamburger.png
     - assets/images/send.png
-    - assets/images/logo.png
-    - assets/images/name.png
-    - assets/images/refresh.png
+    - assets/images/newChat.png
+    - assets/images/footer.png
+    - assets/images/bot_refresh.png
+    - assets/images/edit_refresh.png
+    - assets/images/bg_texture.png
+    - assets/images/bg_color.png
     - .env
 
 
 
 
-  fonts:
+  fonts :
     - family: Goldman
       fonts:
         - asset: assets/fonts/Goldman-Regular.ttf  
