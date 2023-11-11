@@ -121,17 +121,14 @@ class _HomeScreenState extends State<HomeScreen> {
               Spacer(flex: 3),
               GestureDetector(
                 onTap: () {
-                   !isLoading ? 
-                  (
-                 
-                  
-                  setState(() {
-                    _generateNewThreadId();
-                    _messageController.clear();
-                    messages.clear();
-                    isFirstMessageSent = false;
-                  }) 
-                  ) : " ";
+                  !isLoading
+                      ? (setState(() {
+                          _generateNewThreadId();
+                          _messageController.clear();
+                          messages.clear();
+                          isFirstMessageSent = false;
+                        }))
+                      : " ";
                 },
                 child: Image.asset(
                   "assets/images/newChat.png", height: 100.0, // Set the height
@@ -346,16 +343,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: AppColors.accentColor,
+                      color: !isLoading ? AppColors.accentColor : Colors.grey,
                       width: 3,
                     ),
                   ),
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      primary:
-                          Colors.transparent, // Makes the button transparent
-                      shadowColor:
-                          Colors.transparent, // Removes any shadow (elevation)
+                      primary: !isLoading
+                          ? Colors.transparent
+                          : Colors.grey, // Makes the button transparent
+                      shadowColor: !isLoading
+                          ? Colors.transparent
+                          : Colors.grey, // Removes any shadow (elevation)
                       padding:
                           EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                       shape: RoundedRectangleBorder(
@@ -363,26 +362,24 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     onPressed: () {
-                      print("Add button pressed");
-                      setState(() {
-                        _generateNewThreadId();
-                        _messageController.clear();
-                        print("New thread ID generated: $currentThreadId");
-                        print(threads);
-                        // threads.add(currentThreadId);
-                        print("Current threads: $threads");
-                        messages.clear();
-                        isFirstMessageSent = false;
-                        Navigator.of(context).pop();
-                      });
-                      print("State set");
+                      !isLoading
+                          ? (setState(() {
+                              _generateNewThreadId();
+                              _messageController.clear();
+                              messages.clear();
+                              isFirstMessageSent = false;
+                              Navigator.of(context).pop();
+                            }))
+                          : " ";
                     },
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.add,
-                            color: Colors
-                                .black), // Change to your desired icon color
+                            color: !isLoading
+                                ? Colors.black
+                                : Colors
+                                    .grey), // Change to your desired icon color
                         SizedBox(width: 8), // Gap between the icon and text
                         Text("New Chat",
                             style: TextStyle(
@@ -397,7 +394,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: ListView.builder(
                   itemCount: threadsByDate.keys.length,
                   itemBuilder: (context, index) {
-                    String date = threadsByDate.keys.toList().elementAt(index);
+                    String date =
+                        threadsByDate.keys.toList().reversed.elementAt(index);
                     DateTime currentDate = DateTime.now();
                     DateTime threadTimestamp = DateTime.parse(date);
                     int daysDifference =
@@ -453,17 +451,17 @@ class _HomeScreenState extends State<HomeScreen> {
                             isFavorite: isFavorite,
                             onDelete: () {
                               _deleteThread(threadId);
-                              messages.clear();
+                              if (currentThreadId == threadId) {
+                                messages.clear();
+                              }
                             },
                             onTap: () {
                               Navigator.of(context).pop();
                               setState(() {
-                                
                                 currentThreadId = threadId;
                                 currentThreadName = threadName;
                                 messages.clear();
                                 isFirstMessageSent = true;
-                                
                               });
 
                               fetchMessages(userId, threadId)
@@ -536,10 +534,10 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     isFetching = true;
-
     _generateNewThreadId();
     _loadUserId().then((_) {
       _fetchThreads().then((_) {
+        _checkAndHandleUserLimit();
         if (mounted) {
           setState(() {
             isFetching = false;
@@ -547,6 +545,54 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       });
     });
+  }
+
+  Future<bool> checkUserLimit(String userId) async {
+    try {
+      final response = await http.get(Uri.parse('${HOST}/$userId/users'));
+      if (response.statusCode == 200) {
+        // User limit not reached
+        return true;
+      } else if (response.statusCode == 403) {
+        // User limit reached
+        return false;
+      } else {
+        // Handle other statuses or errors
+        throw Exception('Failed to check user limit');
+      }
+    } catch (e) {
+      throw Exception('Error checking user limit: $e');
+    }
+  }
+
+  void _checkAndHandleUserLimit() async {
+    bool isLimitNotReached = await checkUserLimit(userId);
+    if (!isLimitNotReached) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showLimitReachedDialog();
+      });
+    }
+  }
+
+  void _showLimitReachedDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Limit Reached"),
+          content: Text(
+              "The maximum number of users has been reached. You cannot send more messages at this time."),
+          // actions: <Widget>[
+          //   ElevatedButton(
+          //     child: Text("OK"),
+          //     onPressed: () {
+          //       Navigator.of(context).pop();
+          //     },
+          //   ),
+          // ],
+        );
+      },
+    );
   }
 
   void _generateNewThreadId() {
@@ -639,7 +685,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (isDeleted) {
       setState(() {
         threads.removeWhere((thread) => thread.threadId == threadId);
-        Navigator.of(context).pop();
+        // Navigator.of(context).pop();
       });
       print('Thread deleted successfully');
     } else {
