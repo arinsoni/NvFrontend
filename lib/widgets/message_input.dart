@@ -32,7 +32,7 @@ class _MessageInputState extends State<MessageInput> {
       child: Stack(
         children: [
           Container(
-
+         
             padding: const EdgeInsets.only(left: 8.0, right: 8, top: 8),
             child: Column(
               children: [
@@ -41,6 +41,7 @@ class _MessageInputState extends State<MessageInput> {
                     
                     Expanded(
                       child: Padding(
+                        
                         padding: const EdgeInsets.only(left: 15.0, right: 15),
                         child: Container(
                           decoration: BoxDecoration(
@@ -67,7 +68,7 @@ class _MessageInputState extends State<MessageInput> {
                                             Color.fromARGB(255, 124, 124, 124),
                                       ),
                                       contentPadding: EdgeInsets.only(
-                                          left: 16.0, right: 48.0),
+                                          left: 16.0, right: 12.0),
                                       border: InputBorder.none,
                                     ),
                                     maxLines: null,

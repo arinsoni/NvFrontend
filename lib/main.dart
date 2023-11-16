@@ -73,8 +73,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
-    double screenHeight = MediaQuery.of(context).size.height;
+    String? lastOutputMsgId;
+    for (var message in messages.reversed) {
+      print("msg in loop: ${message.text}");
+      if (message.sender == 'server') {
+        print(message.msgId);
+        lastOutputMsgId = message.msgId;
+      }
+    }
 
     // final GlobalKey imageKey = GlobalKey();
 
@@ -213,7 +219,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: <Widget>[
                         Expanded(
                           child: Padding(
-                            padding: const EdgeInsets.only(right: 8),
+                            padding: const EdgeInsets.only(right: 0),
                             child: ListView.builder(
                               itemCount: messages.length + (isLoading ? 1 : 0),
                               controller: _scrollController,
@@ -226,9 +232,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                 int messageIndex =
                                     isLoading ? index - 1 : index;
                                 print("\n");
-                                print("deletinf the index ${messageIndex}");
+                                print("Message at index $messageIndex - Thumbs Up: ${messages[messageIndex].thumbsUp}, Thumbs Down: ${messages[messageIndex].thumbsDown}");
+
                                 return MessageContainer(
+                                  host: HOST,
                                   message: messages[messageIndex],
+                                  lastOutputMsgId: lastOutputMsgId ?? " ",
+                                  threadId: currentThreadId,
                                   onEdit: (String text) {
                                     setState(() {
                                       _messageController.text = text;
@@ -469,21 +479,37 @@ class _HomeScreenState extends State<HomeScreen> {
                                 setState(() {
                                   messages.addAll(fetchedMessages
                                       .map((messageData) {
+                                        print("messageData bug: $messageData");
                                         Message inputMessage = Message(
+                                          msgId: messageData['id'],
                                           text: messageData['input'],
                                           sender: 'user',
                                           timestamp: DateTime.parse(
                                               messageData['timestamp']),
                                           userId: userId,
+                                          thumbsUp:
+                                              messageData['thumbsUp'] ??
+                                                  false,
+                                          thumbsDown:
+                                              messageData['thumbsDown'] ??
+                                                  false,
                                         );
+                                        print("Inputmsg bug: ${inputMessage.thumbsUp}");
 
                                         Message outputMessage = Message(
+                                          msgId: messageData['id'],
                                           text: messageData['output'],
                                           sender: 'server',
                                           timestamp: DateTime.parse(
                                               messageData['timestamp']),
                                           userId: userId,
                                           audioUrl: messageData['audioUrl'],
+                                          thumbsUp:
+                                              messageData['thumbsUp'] ??
+                                                  false,
+                                          thumbsDown:
+                                              messageData['thumbsDown'] ??
+                                                  false,
                                         );
 
                                         return [inputMessage, outputMessage];
@@ -551,7 +577,6 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final response = await http.get(Uri.parse('${HOST}/$userId/users'));
       if (response.statusCode == 200) {
-        // User limit not reached
         return true;
       } else if (response.statusCode == 403) {
         // User limit reached
@@ -614,7 +639,7 @@ class _HomeScreenState extends State<HomeScreen> {
       print("API response status code: 200");
 
       var data = json.decode(response.body);
-      print("data fetched by fetchThreads: $data");
+      // print("data fetched by fetchThreads: $data");
 
       if (data is List) {
         setState(() {
@@ -632,7 +657,7 @@ class _HomeScreenState extends State<HomeScreen> {
             }
           }).toList();
 
-          print("threads fetched: ${threads}");
+          // print("threads fetched: ${threads}");
         });
       } else {
         print("Unexpected data format received");
@@ -751,7 +776,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
-
+        print("response form API:  $data");
         return data;
       } else {
         throw Exception(
@@ -794,12 +819,13 @@ class _HomeScreenState extends State<HomeScreen> {
           originalMessage = "";
         } else {
           Message message = Message(
-            text: messageText,
-            sender: 'user',
-            timestamp: now,
-            userId: userId,
-            threadId: currentThreadId,
-          );
+              text: messageText,
+              sender: 'user',
+              timestamp: now,
+              userId: userId,
+              threadId: currentThreadId,
+              thumbsUp: false,
+              thumbsDown: false);
           messages.insert(0, message);
           if (messages.isNotEmpty) {
             isFirstMessageSent = true;
@@ -817,12 +843,15 @@ class _HomeScreenState extends State<HomeScreen> {
       now = DateTime.now();
 
       Message responseMessage = Message(
-        text: apiResponse['text_response'],
-        sender: 'server',
-        timestamp: now,
-        userId: userId,
-        audioUrl: apiResponse['audio_response'],
-      );
+          text: apiResponse['text_response'],
+          sender: 'server',
+          timestamp: now,
+          userId: userId,
+          audioUrl: apiResponse['audio_response'],
+          msgId: apiResponse['msgId'],
+          thumbsUp: apiResponse['thumbsUp'],
+          thumbsDown: apiResponse['thumbsDown']);
+      print("response msg -1 : ${responseMessage}");
 
       Thread? matchingThread;
       for (var thread in threads) {
@@ -898,7 +927,11 @@ class _HomeScreenState extends State<HomeScreen> {
         sender: 'server',
         timestamp: now,
         userId: messageToRefresh.userId,
-        audioUrl: apiResponse['audio_response']);
+        audioUrl: apiResponse['audio_response'],
+        msgId: apiResponse['msgId'],
+        thumbsUp: apiResponse['thumbsUp'],
+        thumbsDown: apiResponse['thumbsDown']);
+    print("refresh msg -2 : ${refreshedMessage}");
 
     setState(() {
       messages.insert(0, refreshedMessage);
